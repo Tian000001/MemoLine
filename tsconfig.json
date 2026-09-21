@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@server/*": ["server/*", "dist/server/*"],
+      "@shared/*": ["shared/*", "dist/shared/*"],
+      "@client/*": ["client/src/*"],
+      "@/*": ["client/src/*"]
+    }
+  }
+}

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>纪事轴 MemoLine · 产品设计规划</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161a21; --panel2:#1c2129; --line:#2a313c;
+    --text:#e6e9ef; --muted:#9aa4b2; --accent:#4fd1c5; --accent2:#6aa3ff;
+    --warn:#f6c177; --danger:#f08a8a; --ok:#7ee0a8;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    line-height:1.6;font-size:15px}
+  a{color:var(--accent2);text-decoration:none}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 24px 80px}
+  header.top{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:28px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:42px;height:42px;border-radius:11px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:#0b0e12;font-size:20px}
+  h1{font-size:26px;margin:0}
+  .sub{color:var(--muted);margin:6px 0 0;font-size:14px}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .toc a{background:var(--panel);border:1px solid var(--line);padding:6px 12px;border-radius:999px;font-size:13px;color:var(--muted)}
+  .toc a:hover{color:var(--text);border-color:var(--accent)}
+  section{margin:38px 0}
+  h2{font-size:20px;border-left:3px solid var(--accent);padding-left:12px;margin:0 0 16px}
+  h3{font-size:16px;color:var(--accent);margin:22px 0 8px}
+  p{color:#cfd6e0}
+  .muted{color:var(--muted)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:820px){.grid2,.grid3{grid-template-columns:1fr}}
+  .pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);margin:2px}
+  .pill.mvp{color:var(--ok);border-color:#2f5d45;background:#10241a}
+  .pill.later{color:var(--warn);border-color:#5d4f2f;background:#241f10}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--muted);font-weight:600}
+  code{background:var(--panel2);padding:1px 6px;border-radius:6px;font-size:13px;color:var(--accent)}
+  ul{margin:8px 0;padding-left:20px}
+  .note{background:#13202b;border:1px solid #244055;color:#bfe3f2;border-radius:10px;padding:12px 14px;font-size:13.5px;margin:14px 0}
+  .lock{background:#16241c;border:1px solid #2f5d45;color:#bfe9d2;border-radius:10px;padding:12px 14px;font-size:13.5px;margin:14px 0}
+  .lock b{color:var(--ok)}
+  /* wireframe */
+  .wf{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+  .wf h4{margin:0 0 4px;font-size:14px}
+  .wf .cap{color:var(--muted);font-size:12.5px;margin:0 0 12px}
+  .device{background:#0c0f14;border:1px dashed #34404e;border-radius:12px;overflow:hidden}
+  .bar{display:flex;align-items:center;gap:8px;background:#141922;border-bottom:1px dashed #2c3640;padding:9px 12px}
+  .bar .b{height:9px;border-radius:5px;background:#27313d}
+  .bar .b.lg{width:64px}.bar .b.sm{width:30px}.bar .b.flex{flex:1}
+  .bar .btn{margin-left:auto;background:var(--accent);color:#0b0e12;font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px}
+  .body{display:flex;min-height:240px}
+  .side{width:120px;border-right:1px dashed #2c3640;padding:10px;background:#0e1218}
+  .side .chip{height:18px;border-radius:6px;background:#1b232e;margin:6px 0}
+  .side .chip.on{background:#1d3a33}
+  .main{flex:1;padding:12px;overflow:hidden}
+  .tl{position:relative;padding-left:18px}
+  .tl:before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:#2c3640}
+  .ev{position:relative;margin:0 0 12px;background:#121823;border:1px solid #232d39;border-radius:9px;padding:9px 11px}
+  .ev:before{content:"";position:absolute;left:-15px;top:13px;width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px #0c0f14}
+  .ev .t{font-size:12.5px;font-weight:600}
+  .ev .m{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .thumbs{display:flex;gap:5px;margin-top:7px}
+  .thumbs .th{width:34px;height:26px;border-radius:5px;background:#22303d;display:flex;align-items:center;justify-content:center;font-size:11px;color:#6f7d8c}
+  .form{display:grid;gap:9px;padding:12px}
+  .fld{background:#0e1218;border:1px solid #232d39;border-radius:8px;height:30px;padding:0 10px;display:flex;align-items:center;color:var(--muted);font-size:12px}
+  .fld.area{height:64px;align-items:flex-start;padding-top:8px}
+  .row{display:flex;gap:10px}
+  .row .fld{flex:1}
+  .up{display:flex;gap:8px;padding:0 12px 12px}
+  .up .u{flex:1;height:46px;border:1px dashed #34404e;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11.5px}
+  .paste{margin:0 12px 12px;height:54px;border:1px dashed #34404e;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
+  .arch{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+  .box{flex:1;min-width:180px;background:#0e1218;border:1px solid #232d39;border-radius:10px;padding:12px}
+  .box .t{font-size:13px;font-weight:700;color:var(--accent)}
+  .box .d{font-size:12px;color:var(--muted);margin-top:5px}
+  .flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+  .flow .step{background:#121823;border:1px solid #232d39;border-radius:10px;padding:11px 13px;min-width:130px;flex:1}
+  .flow .step .n{font-size:11px;color:var(--accent);font-weight:700}
+  .flow .step .t{font-size:13px;font-weight:600;margin-top:3px}
+  .arrow{display:flex;align-items:center;color:#3a4654;padding:0 8px;font-size:18px}
+  @media(max-width:820px){.arrow{transform:rotate(90deg)}}
+  footer{margin-top:50px;border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="logo">纪</div>
+      <div>
+        <h1>纪事轴 · MemoLine</h1>
+        <p class="sub">时间线事件归档 + 多模态证据挂载 + 大模型事后复盘 — 产品设计规划 v0.2</p>
+      </div>
+    </div>
+    <div class="toc">
+      <a href="#pos">① 项目定位</a>
+      <a href="#idea">② 设计思路</a>
+      <a href="#feat">③ 功能清单</a>
+      <a href="#arch">④ 信息架构</a>
+      <a href="#data">⑤ 数据模型</a>
+      <a href="#tech">⑥ 技术架构</a>
+      <a href="#wf">⑦ 页面线框图</a>
+      <a href="#road">⑧ 路线图</a>
+    </div>
+  </header>
+
+  <!-- ① -->
+  <section id="pos">
+    <h2>① 项目定位</h2>
+    <div class="card">
+      <p>一个<strong>时序事件归档平台</strong>：按时间点记录事件、地点、文字描述，支持上传照片 / 视频、导入聊天记录，自动生成可视化时间线；最后调用大模型对整条事件链做梳理、摘要、关系分析、疑点提炼。</p>
+      <p class="muted">适用场景：事件复盘、取证整理、项目纪实、个人大事记。首版定位 <span class="pill mvp">本地单机版</span>，数据存本机、无需登录；模型调用做成可插拔接口，先留位、后续填 key 即生效。</p>
+    </div>
+  </section>
+
+  <!-- ② -->
+  <section id="idea">
+    <h2>② 设计思路（核心原则）</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>1 · 事件即原子</h3>
+        <p class="muted">最小记录单位是一个"事件"：时间 + 地点 + 类型 + 标题 + 正文 + 标签。媒体、聊天、关联都挂在事件上，互不孤立。</p>
+      </div>
+      <div class="card">
+        <h3>2 · 时间轴为主线</h3>
+        <p class="muted">首页一条可上下滑动的时间轴。支持列表视图切换、按类型/标签/地点/关键词筛选、顶部时间标尺缩放。</p>
+      </div>
+      <div class="card">
+        <h3>3 · 多模态证据挂载</h3>
+        <p class="muted">照片/视频本地存文件、DB 存路径；聊天粘贴文本 / 传截图 / 传导出 txt，解析成结构化片段附在事件下。</p>
+      </div>
+      <div class="card">
+        <h3>4 · 关联而非堆叠</h3>
+        <p class="muted">事件间可建立"引用 / 因果 / 反驳"关系，形成网络。复盘与疑点识别据此理清来龙去脉。</p>
+      </div>
+      <div class="card">
+        <h3>5 · 事实与猜测分开</h3>
+        <p class="muted">事件带轻量 type（记事/假设/待办/结论）。复盘时模型能区分"记录的事实"与"当事人的猜测"，疑点识别才准。</p>
+      </div>
+      <div class="card">
+        <h3>6 · 先记录、后整理</h3>
+        <p class="muted">记录门槛极低（一句话也行），整理交给模型。降低"写日记"的心理负担，鼓励随手记。</p>
+      </div>
+    </div>
+
+    <div class="lock">
+      <b>v0.2 已锁定设计决策（来自评审微调）</b>
+      <ul style="margin:8px 0 0">
+        <li><b>时间线方向</b>：首页用<strong>纵向时间轴 + 顶部时间标尺</strong>；横向时间轴视觉好但事件多时拥挤，放二期做缩略概览。</li>
+        <li><b>事件 type 字段</b>：录入保留轻量 type（记事/假设/待办/结论，默认记事），不增加负担。</li>
+        <li><b>事件关联提进 MVP</b>：至少支持手动引用/因果两条事件，供疑点识别使用。</li>
+        <li><b>聊天导入 / 视频 → 二期</b>：OCR 截图识别是重活（需接 OCR 服务），谨慎后置；二期先做粘贴文本 + 微信/txt 导出解析。</li>
+        <li><b>分析先 mock</b>：MVP 分析走 <code>/analyze</code> 占位，核心闭环是 录→存→看时间线；真模型放第二阶段填 key。</li>
+        <li><b>Context Assembler</b>：后端单列"上下文拼接"模块，分析质量的关键（见 ⑥）。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ③ -->
+  <section id="feat">
+    <h2>③ 功能清单（分期）</h2>
+    <div class="card">
+      <h3>首版 MVP（先做这些 · v0.2 锁定）</h3>
+      <ul>
+        <li><span class="pill mvp">MVP</span> 新建 / 编辑 / 删除事件：时间(精确到时分)、地点(手动输入)、<strong>类型(记事/假设/待办/结论，默认记事)</strong>、标题、正文、标签</li>
+        <li><span class="pill mvp">MVP</span> 首页：<strong>纵向时间轴 + 顶部时间标尺</strong>，可切换列表视图；筛选（类型 / 标签 / 关键词）</li>
+        <li><span class="pill mvp">MVP</span> 图片上传 + 缩略图（本地存储，DB 存路径）</li>
+        <li><span class="pill mvp">MVP</span> 事件详情页：完整文字、地图点位(手动)、图片预览、关联事件</li>
+        <li><span class="pill mvp">MVP</span> 事件间<strong>轻量关联</strong>（手动引用 / 因果）</li>
+        <li><span class="pill mvp">MVP</span> 分析面板：选范围 → 选模板(摘要/人物时间/疑点) → 调 <code>/analyze</code>（<strong>先 mock 占位</strong>）→ 结果展示 + 复制</li>
+      </ul>
+      <h3>二期（Phase 2）</h3>
+      <ul>
+        <li><span class="pill later">LATER</span> 短视频上传与预览 / 转码</li>
+        <li><span class="pill later">LATER</span> 聊天导入：粘贴文本 + 微信/txt 导出解析（<strong>OCR 截图识别谨慎后置</strong>）</li>
+        <li><span class="pill later">LATER</span> 接真实模型：填 API key / 本地 Ollama，分析可追问、可保存</li>
+        <li><span class="pill later">LATER</span> 横向缩略时间轴、地图选点、日历视图</li>
+      </ul>
+      <h3>更后期</h3>
+      <ul>
+        <li><span class="pill later">LATER</span> 全文检索 + 语义检索（向量库）</li>
+        <li><span class="pill later">LATER</span> 导出报告 Markdown / PDF、时间线截图</li>
+        <li><span class="pill later">LATER</span> 云端同步 + 多成员协作（需账号体系）</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ④ -->
+  <section id="arch">
+    <h2>④ 信息架构 & 页面流</h2>
+    <div class="flow">
+      <div class="step"><div class="n">页面 A</div><div class="t">时间线主页</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">页面 B</div><div class="t">事件详情/编辑</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">页面 C</div><div class="t">媒体 / 聊天导入</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">页面 D</div><div class="t">分析复盘</div></div>
+    </div>
+    <div class="note">交互主线：主页看全局 → 点开某事件编辑/补充证据 → 随时跳分析页，框选一段时间或勾选若干事件，让模型产出复盘。事件编辑页内嵌媒体与聊天导入，记录与取证在同一处完成。</div>
+  </section>
+
+  <!-- ⑤ -->
+  <section id="data">
+    <h2>⑤ 数据模型（SQLite）</h2>
+    <div class="card">
+      <table>
+        <tr><th>表</th><th>关键字段</th><th>说明</th></tr>
+        <tr><td><code>events</code></td><td>id, datetime, location, type, title, content, tags, created_at</td><td>事件本体。type ∈ {记事, 假设, 待办, 结论}</td></tr>
+        <tr><td><code>media</code></td><td>id, event_id, kind(photo/video), path, caption, created_at</td><td>媒体文件存本地目录，DB 仅存路径</td></tr>
+        <tr><td><code>chats</code></td><td>id, event_id, source, raw_text, parsed_json, created_at</td><td>导入的聊天；parsed_json 存结构化片段（二期）</td></tr>
+        <tr><td><code>links</code></td><td>id, from_event, to_event, relation</td><td>relation ∈ {reference, causal, refute}</td></tr>
+        <tr><td><code>analyses</code></td><td>id, scope, prompt, result, model, created_at</td><td>复盘记录，可回看/追问</td></tr>
+      </table>
+      <p class="muted" style="margin-top:12px">文件存储：<code>./data/media/</code> 下按年月分目录；DB 在 <code>./data/memoline.db</code>。本地单机，无云端。</p>
+    </div>
+  </section>
+
+  <!-- ⑥ -->
+  <section id="tech">
+    <h2>⑥ 技术架构</h2>
+    <div class="grid3">
+      <div class="card"><h3>前端</h3><p class="muted">React 或 Vue3 + Vite + Tailwind。时间线自绘组件，图表轻量。（build 时定一个）</p></div>
+      <div class="card"><h3>后端</h3><p class="muted">Python FastAPI。事件/媒体/聊天/分析 REST 接口；静态文件服务媒体。</p></div>
+      <div class="card"><h3>存储</h3><p class="muted">SQLite + 本地文件系统。零外部依赖，开箱即跑。</p></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>模型接口（先留位，后接）</h3>
+      <p class="muted">后端 <code>POST /analyze</code> 先返回 mock 结构；约定好入参（事件+媒体+聊天的上下文拼接）与出参（markdown 报告）。之后填 API key 或换本地模型，前端无需改动。</p>
+    </div>
+    <div class="note">关键模块 · <strong>Context Assembler</strong>：分析前由后端把"选中事件 + 媒体说明(caption) + 聊天解析(parsed_json)"拼成结构化 prompt（含时间 / 地点 / type / 关联），再送模型。这是复盘质量的关键，且<strong>独立于具体模型供应商</strong>——换 OpenAI / 通义 / 豆包只改一处适配。</div>
+  </section>
+
+  <!-- ⑦ -->
+  <section id="wf">
+    <h2>⑦ 页面线框图（大致样子）</h2>
+
+    <!-- 时间线主页 -->
+    <div class="wf">
+      <h4>页面 A · 时间线主页（纵向 + 列表切换）</h4>
+      <p class="cap">顶部时间标尺 + 筛选栏 + 纵向时间轴卡片流 + 左侧类型/标签快速过滤</p>
+      <div class="device">
+        <div class="bar">
+          <div class="b lg"></div><div class="b flex"></div>
+          <div class="b sm"></div><div class="b sm"></div>
+          <div class="btn">+ 记录</div>
+        </div>
+        <div class="body">
+          <div class="side">
+            <div class="chip on"></div><div class="chip"></div><div class="chip"></div>
+            <div class="chip"></div><div class="chip"></div><div class="chip"></div>
+          </div>
+          <div class="main">
+            <div class="tl">
+              <div class="ev"><div class="t">09-18 上海 · 项目启动会</div><div class="m">和人碰了方案，初步定了方向</div>
+                <div class="thumbs"><div class="th">📷</div><div class="th">📷</div></div></div>
+              <div class="ev"><div class="t">09-15 杭州 · 假设：竞品月底改版</div><div class="m">需验证</div></div>
+              <div class="ev"><div class="t">09-12 北京 · 用户访谈</div><div class="m">导入了 3 段聊天记录</div>
+                <div class="thumbs"><div class="th">💬</div><div class="th">💬</div></div></div>
+              <div class="ev"><div class="t">09-09 深圳 · 待办</div><div class="m">整理竞品资料，周五前给结论</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 事件编辑 -->
+    <div class="wf">
+      <h4>页面 B · 事件详情 / 编辑</h4>
+      <p class="cap">左：表单（含 type）；右：媒体区 + 关联事件（聊天导入二期出现）</p>
+      <div class="device">
+        <div class="bar"><div class="b lg"></div><div class="b flex"></div><div class="btn">保存</div></div>
+        <div class="body">
+          <div class="main" style="border-right:1px dashed #2c3640">
+            <div class="form">
+              <div class="row"><div class="fld">时间 · 2026-09-18 14:00</div><div class="fld">地点 · 上海</div></div>
+              <div class="row"><div class="fld">类型 · 记事 ▾</div><div class="fld">标签 · 项目,会议</div></div>
+              <div class="fld">标题 · 项目启动会</div>
+              <div class="fld area">正文：和人碰了方案，初步定了方向…</div>
+            </div>
+          </div>
+          <div class="main">
+            <div class="up">
+              <div class="u">📷 上传照片</div><div class="u" style="opacity:.45">🎬 视频(二期)</div>
+            </div>
+            <div class="form"><div class="fld">关联事件：引用 #启动会 → 假设 #竞品改版</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分析 -->
+    <div class="wf">
+      <h4>页面 D · 大模型分析复盘（mock 占位）</h4>
+      <p class="cap">选时间范围/勾选事件 → 选分析模板 → 运行 → 流式结果（当前 /analyze 返回占位）</p>
+      <div class="device">
+        <div class="bar"><div class="b lg"></div><div class="b flex"></div><div class="btn">运行分析</div></div>
+        <div class="body">
+          <div class="side">
+            <div class="chip on"></div><div class="chip on"></div><div class="chip"></div><div class="chip on"></div>
+            <div class="chip" style="margin-top:14px;background:#1d2a36"></div>
+          </div>
+          <div class="main">
+            <div class="row" style="margin:0 0 10px">
+              <div class="fld" style="flex:1">模板：时间线摘要 / 人物&时间 / 疑点识别</div>
+            </div>
+            <div class="box"><div class="t">复盘输出</div>
+              <div class="d">根据 09-09 ~ 09-18 共 6 条事件（含 1 假设、1 待办）：<br>① 启动会定方向 → ② 提出竞品改版假设 → ③ 访谈佐证…<br><span class="muted">（当前为接口占位，接模型后流式生成）</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑧ -->
+  <section id="road">
+    <h2>⑧ 路线图</h2>
+    <div class="card">
+      <ul>
+        <li><strong>Phase 1 · MVP（本次）</strong>：事件 CRUD(含 type) + 纵向时间轴/列表 + 图片缩略图 + 轻量关联 + 分析面板(mock 占位)，SQLite + 本地 media，本地跑通。</li>
+        <li><strong>Phase 2</strong>：短视频、聊天导入(文本/导出解析)、接真实模型(填 key/Ollama)、横向缩略时间轴、地图选点。</li>
+        <li><strong>Phase 3</strong>：语义检索、OCR 截图识别、证据自动归类增强。</li>
+        <li><strong>Phase 4</strong>：报告导出(MD/PDF)、时间线截图、可选云端同步 + 多成员协作。</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    规划文档 v0.2 · 纪事轴 MemoLine · 已整合用户详细 PRD 与 6 点评审微调（纵向时间轴、type 字段、事件关联提进 MVP、聊天/视频进二期且 OCR 谨慎、分析先 mock、Context Assembler）。
+    下一步：确认方案后，我按 MVP 直接搭出可运行的本地版本（React/Vue3 + FastAPI + SQLite）。
+    另：工作区里的"身份档案"还没填，回头给我起个名字、告诉我怎么称呼你，我顺手办了。
+  </footer>
+
+</div>
+</body>
+</html>

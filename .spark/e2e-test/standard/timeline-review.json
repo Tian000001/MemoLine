@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"打开时间线首页，页面正常渲染，显示时间线标题和事件列表"},{"id":2,"priority":"p0","description":"点击导航栏「新建事件」进入新建页面，表单字段完整显示"},{"id":3,"priority":"p0","description":"导航切换：时间线→智能复盘→新建事件，各页面均可正常打开"},{"id":4,"priority":"p1","description":"点击时间线事件节点，展开显示详情内容（描述+聊天记录）"},{"id":5,"priority":"p1","description":"智能复盘页面显示创建表单和历史报告列表区域"}]}
