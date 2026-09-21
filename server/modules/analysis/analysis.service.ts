@@ -53,23 +53,23 @@ export class AnalysisService {
 
   async createReport(dto: CreateAnalysisRequest): Promise<AnalysisReport> {
     const now = new Date().toISOString();
-    const [inserted] = await this.db
-      .insert(analysisReports)
-      .values({
-        id: randomUUID(),
-        title: dto.title,
-        timeRangeStart: dto.startTime ?? null,
-        timeRangeEnd: dto.endTime ?? null,
-        status: 'pending',
-        summary: '',
-        fullReport: '',
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
+    const id = randomUUID();
+    // Insert without relying on `.returning()` (libsql can return an empty set
+    // for some column shapes); fetch the row back via the id we generated.
+    await this.db.insert(analysisReports).values({
+      id,
+      title: dto.title,
+      timeRangeStart: dto.startTime ?? null,
+      timeRangeEnd: dto.endTime ?? null,
+      status: 'pending',
+      summary: '',
+      fullReport: '',
+      createdAt: now,
+      updatedAt: now,
+    });
 
-    void this.generateReport(inserted.id, dto);
-    return this.mapReport(inserted[0]);
+    void this.generateReport(id, dto);
+    return this.getReportDetail(id);
   }
 
   async deleteReport(id: string): Promise<void> {

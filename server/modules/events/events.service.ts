@@ -167,7 +167,9 @@ export class EventsService {
             id: randomUUID(),
             eventId: created.id,
             mediaType: m.mediaType,
-            filePath: m.filePath,
+            // file_path is NOT NULL; the client form only supplies fileUrl after
+            // upload, so fall back to the URL (or its basename) when path missing.
+            filePath: m.filePath ?? m.fileUrl ?? '',
             fileUrl: m.fileUrl ?? null,
             fileName: m.fileName ?? null,
             fileSize: m.fileSize ?? null,
