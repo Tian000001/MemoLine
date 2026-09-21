@@ -9,7 +9,17 @@ build/
 */build/
 
 # Environment files
-.env.local
+# 真实环境文件可能含 AI_API_KEY / DATABASE_URL 等敏感或本机专属配置——严禁提交
+# 仅保留 .env.example 作为公开模板
+.env
+.env.*
+!.env.example
+
+# Local database (libSQL / SQLite)
+data/
+*.db
+*.sqlite
+*.sqlite3
 
 # Logs
 npm-debug.log*
@@ -17,6 +27,7 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 /logs/
+*.log
 
 # Runtime data
 pids
@@ -63,3 +74,7 @@ pnpm-lock.yaml
 # Agent files
 .agent/
 .npm_cache
+
+# Tooling / agent project configs (Spark, etc.) — not part of the app
+.spark/
+.spark_project
