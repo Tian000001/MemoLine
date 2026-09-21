@@ -4,7 +4,7 @@
     "paths": {
       "@server/*": ["server/*", "dist/server/*"],
       "@shared/*": ["shared/*", "dist/shared/*"],
-      "@client/*": ["client/src/*"],
+      "@client/*": ["client/*"],
       "@/*": ["client/src/*"]
     }
   }
