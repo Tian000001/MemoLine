@@ -21,6 +21,9 @@ data/
 *.sqlite
 *.sqlite3
 
+# Uploads (runtime media written by Multer)
+uploads/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
