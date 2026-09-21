@@ -5,14 +5,28 @@
 
 ## 技术架构
 
+技术栈：**FastAPI（Python 3.13）+ 静态 HTML/Tailwind CDN + SQLite**。单端口同源部署，
+无构建步骤；便携 Python 运行时内置在 `python/`，整个目录可直接拷到其他 Windows 电脑运行。
+
+### 目录
+- `backend/` - FastAPI 服务：`app/main.py`（应用入口/异常处理/静态挂载）、`app/db.py`（建表）、
+  `app/schemas.py`（Pydantic 模型）、`app/routers/{events,analysis,media}.py`、
+  `app/services/{events,analysis}_service.py`、`app/utils/{chat_parser,ai_report_parser}.py`
+- `frontend/` - 静态前端：`index.html`（时间线）、`event.html`（录入/编辑）、`analysis.html`（复盘）、
+  `404.html`、`js/{api,ui,timeline,event,analysis}.js`、`css/app.css`
+- `python/` - 内置便携 Python 运行时（已预装依赖，不入 git）
+- `scripts/check_commit.py` - pre-commit 校验脚本
+- `legacy/` - 旧的 NestJS + React 实现，仅作参考
+
 ### 后端模块
 - `events` - 事件核心模块：事件 CRUD、筛选搜索、媒体关联、聊天记录导入与解析
 - `analysis` - 大模型分析模块：事件范围选择、AI 复盘报告生成、报告导出
+- `media` - 媒体上传（`/api/media/upload`）与静态访问（`/api/media/<file>`）
 
 ### 前端页面
-- `/` (TimelinePage) - 时间线主界面 + 搜索筛选 + 事件详情
-- `/new` (EventFormPage) - 事件录入页面
-- `/analysis` (AnalysisPage) - 大模型分析与复盘报告页面
+- `/index.html` - 时间线主界面 + 搜索筛选 + 事件详情
+- `/event.html` - 事件录入 / 编辑页面（`?id=` 进入编辑模式）
+- `/analysis.html` - 大模型分析与复盘报告页面
 
 ### 数据模型
 - `events` - 事件主表（时间、地点、描述、标签）

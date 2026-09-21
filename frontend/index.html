@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>事件时间线 · 时间线复盘</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="theme-color" content="#11110F" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body class="min-h-screen bg-slate-900 text-slate-100">
+    <div id="app-header"></div>
+
+    <main class="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <div class="space-y-6">
+        <!-- 页头 -->
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-2xl font-semibold tracking-tight text-slate-100">事件时间线</h2>
+            <p class="mt-1 text-sm text-slate-400">按时间倒序浏览所有事件记录</p>
+          </div>
+          <a
+            href="event.html"
+            class="inline-flex items-center justify-center gap-2 self-start rounded-lg bg-cyan-500 px-5 py-2.5 text-sm font-medium text-slate-900 transition-colors hover:bg-cyan-400 sm:self-auto"
+          >
+            <i data-lucide="plus" class="h-4 w-4"></i>
+            新建事件
+          </a>
+        </div>
+
+        <!-- 搜索栏 -->
+        <div class="flex flex-col gap-3 rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 sm:flex-row">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"></i>
+            <input
+              id="f-keyword"
+              type="text"
+              placeholder="搜索关键词（描述 / 地点）..."
+              class="w-full rounded-lg border border-slate-700/50 bg-slate-900/60 py-2 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
+            />
+          </div>
+          <button
+            id="btn-toggle-filter"
+            type="button"
+            class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700/50 bg-slate-900/60 px-4 py-2 text-sm text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800"
+          >
+            <i data-lucide="filter" class="h-4 w-4"></i>
+            筛选
+            <span
+              id="filter-count"
+              class="hidden h-5 min-w-5 items-center justify-center rounded-full bg-cyan-500 px-1.5 text-xs text-slate-900"
+            ></span>
+            <i data-lucide="chevron-down" id="filter-chevron" class="h-4 w-4"></i>
+          </button>
+        </div>
+
+        <!-- 筛选面板 -->
+        <div
+          id="filter-panel"
+          class="grid gap-4 rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 sm:grid-cols-2 lg:grid-cols-4"
+          style="display: none"
+        >
+          <div class="space-y-1.5">
+            <label class="text-xs text-slate-400" for="f-tag">标签</label>
+            <div class="relative">
+              <i data-lucide="tag" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"></i>
+              <input
+                id="f-tag"
+                type="text"
+                placeholder="输入标签名"
+                class="w-full rounded-lg border border-slate-700/50 bg-slate-900/60 py-2 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
+              />
+            </div>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs text-slate-400" for="f-location">地点</label>
+            <div class="relative">
+              <i data-lucide="map-pin" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"></i>
+              <input
+                id="f-location"
+                type="text"
+                placeholder="输入地点关键词"
+                class="w-full rounded-lg border border-slate-700/50 bg-slate-900/60 py-2 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
+              />
+            </div>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs text-slate-400" for="f-start">开始日期</label>
+            <input
+              id="f-start"
+              type="date"
+              class="w-full rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 focus:border-cyan-500/50 focus:outline-none"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs text-slate-400" for="f-end">结束日期</label>
+            <input
+              id="f-end"
+              type="date"
+              class="w-full rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 focus:border-cyan-500/50 focus:outline-none"
+            />
+          </div>
+          <div id="clear-filter-wrap" class="sm:col-span-2 lg:col-span-4" style="display: none">
+            <button
+              id="btn-clear-filter"
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-slate-400 transition-colors hover:text-slate-200"
+            >
+              <i data-lucide="x" class="h-3.5 w-3.5"></i>
+              清除所有筛选
+            </button>
+          </div>
+        </div>
+
+        <!-- 时间线 -->
+        <div class="relative">
+          <div class="absolute left-4 top-0 bottom-0 w-px bg-slate-700/60"></div>
+          <div id="timeline-list" class="space-y-6"></div>
+
+          <div id="load-more-wrap" class="mt-6 pl-10" style="display: none">
+            <button
+              id="btn-load-more"
+              type="button"
+              class="w-full rounded-lg border border-slate-700/50 bg-slate-800/60 py-2.5 text-sm text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800"
+            >
+              加载更多
+            </button>
+            <p id="loaded-count" class="mt-2 text-center text-xs text-slate-500"></p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div
+      id="toast-root"
+      class="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-2"
+    ></div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/timeline.js"></script>
+  </body>
+</html>

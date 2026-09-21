@@ -1,0 +1,8 @@
+# ttq-time 后端依赖（FastAPI 生态）
+# 已随项目内置 python/ 运行时预装；如需在系统 Python 上重装，执行：
+#   python -m pip install -r backend/requirements.txt
+
+fastapi>=0.115,<1.0
+uvicorn>=0.30,<1.0
+pydantic>=2.7,<3.0
+python-multipart>=0.0.9

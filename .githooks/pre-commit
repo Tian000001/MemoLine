@@ -1,20 +1,42 @@
 #!/usr/bin/env sh
+#
+# ttq-time pre-commit hook
+#
+# 只校验本次「暂存」的文件，避免被仓库里已有的历史问题卡住所有提交。
+# 实际检查逻辑在 scripts/check_commit.py：
+#   * *.py              语法检查（ast.parse，不执行代码）
+#   * *.bat / *.cmd     必须纯 ASCII + CRLF + 无 BOM
+#
+# 启用本钩子（一次性配置）：
+#   git config core.hooksPath .githooks
+#
+# 显式跳过本次校验：
+#   SKIP_GIT_HOOKS=1 git commit ...
+#
+
 [ "$SKIP_GIT_HOOKS" = "1" ] && exit 0
 
-# 只校验本次暂存的文件，避免被仓库中已有的历史 lint 问题卡住所有提交。
-# 直接用 node 运行 eslint（绕过 Windows 下 npm 脚本解析异常，且无需依赖缺失的 precommit 脚本）。
-STAGED=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.mjs' '*.cjs')
-if [ -n "$STAGED" ]; then
-  ESLINT=node_modules/eslint/bin/eslint.js
-  CONFIG=eslint.config.js
-  if [ -f "$ESLINT" ] && [ -f "$CONFIG" ]; then
-    echo "ESLint 校验暂存文件..."
-    node "$ESLINT" --quiet --config "$CONFIG" $STAGED
-    if [ $? -ne 0 ]; then
-      echo "ESLint 未通过，请修复后再提交（或 SKIP_GIT_HOOKS=1 跳过）。"
-      exit 1
+# 找到可用的 Python：优先用项目内置运行时，其次系统 python
+PY=""
+if [ -f "python/python.exe" ]; then
+  PY="python/python.exe"
+else
+  for candidate in python3 python; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      PY="$candidate"
+      break
     fi
-  else
-    echo "（未检测到 eslint 或 eslint.config.js，跳过 pre-commit 校验）"
-  fi
+  done
 fi
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+if [ -z "$PY" ]; then
+  echo "[pre-commit] 未找到可用的 Python，跳过校验（设置 SKIP_GIT_HOOKS=1 可显式跳过）。"
+  exit 0
+fi
+
+printf '%s\n' "$STAGED" | "$PY" scripts/check_commit.py

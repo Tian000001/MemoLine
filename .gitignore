@@ -7,6 +7,7 @@ dist/
 */dist/
 build/
 */build/
+legacy/
 
 # Environment files
 # 真实环境文件可能含 AI_API_KEY / DATABASE_URL 等敏感或本机专属配置——严禁提交
@@ -81,3 +82,28 @@ pnpm-lock.yaml
 # Tooling / agent project configs (Spark, etc.) — not part of the app
 .spark/
 .spark_project
+
+# Bundled portable runtimes (large binaries — do not commit; distribute by copying the folder)
+/python/
+/node/
+/runtime/
+
+# Legacy NestJS + React implementation, kept for reference only
+/legacy/
+/legacy/**
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Python virtual environments (never commit)
+.venv/
+venv/
+env/
+*.egg-info/
+
+# 自检脚本产物
+e2e-report.txt

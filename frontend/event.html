@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>新建事件 · 时间线复盘</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="theme-color" content="#11110F" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body class="min-h-screen bg-slate-900 text-slate-100">
+    <div id="app-header"></div>
+
+    <main class="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <div class="space-y-6">
+        <!-- 页头 -->
+        <div class="flex items-center gap-4">
+          <button
+            id="btn-back"
+            type="button"
+            class="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-700/50 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
+          >
+            <i data-lucide="arrow-left" class="h-4.5 w-4.5"></i>
+          </button>
+          <div>
+            <h2 id="page-title" class="text-2xl font-semibold tracking-tight text-slate-100">
+              新建事件
+            </h2>
+            <p class="mt-1 text-sm text-slate-400">记录事件的时间、地点、描述和相关素材</p>
+          </div>
+        </div>
+
+        <div id="loading-tip" class="flex items-center justify-center py-20" style="display: none">
+          <i data-lucide="loader-2" class="spin h-8 w-8 text-cyan-400"></i>
+        </div>
+
+        <form id="event-form" class="space-y-6" style="display: none">
+          <!-- 基础信息 -->
+          <div class="rounded-xl border border-slate-700/50 bg-slate-800/60 p-5 backdrop-blur-sm">
+            <h3 class="mb-4 flex items-center gap-2 text-base font-medium text-slate-200">
+              <i data-lucide="clock" class="h-4 w-4 text-cyan-400"></i>
+              基础信息
+            </h3>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="mb-1.5 block text-sm text-slate-400" for="f-time">日期时间 *</label>
+                <input
+                  id="f-time"
+                  type="datetime-local"
+                  required
+                  class="w-full rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 focus:border-cyan-500/50 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label class="mb-1.5 block text-sm text-slate-400" for="f-location">地点</label>
+                <div class="relative">
+                  <i data-lucide="map-pin" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"></i>
+                  <input
+                    id="f-location"
+                    type="text"
+                    placeholder="输入事件发生地点"
+                    class="w-full rounded-lg border border-slate-700/50 bg-slate-900/60 py-2 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="mt-4">
+              <label class="mb-1.5 block text-sm text-slate-400" for="f-description">事件描述 *</label>
+              <textarea
+                id="f-description"
+                rows="4"
+                required
+                placeholder="详细描述事件经过..."
+                class="w-full resize-none rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- 标签 -->
+          <div class="rounded-xl border border-slate-700/50 bg-slate-800/60 p-5 backdrop-blur-sm">
+            <h3 class="mb-4 flex items-center gap-2 text-base font-medium text-slate-200">
+              <i data-lucide="tag" class="h-4 w-4 text-cyan-400"></i>
+              标签
+            </h3>
+            <input
+              id="f-tag-input"
+              type="text"
+              placeholder="输入标签，按回车添加"
+              class="w-full rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
+            />
+            <div id="tag-list" class="mt-3 flex flex-wrap gap-2"></div>
+          </div>
+
+          <!-- 媒体上传 -->
+          <div class="rounded-xl border border-slate-700/50 bg-slate-800/60 p-5 backdrop-blur-sm">
+            <h3 class="mb-4 flex items-center gap-2 text-base font-medium text-slate-200">
+              <i data-lucide="image" class="h-4 w-4 text-cyan-400"></i>
+              媒体上传
+            </h3>
+            <input id="file-input" type="file" accept="image/*,video/*" multiple class="hidden" />
+            <button
+              id="btn-upload"
+              type="button"
+              class="flex h-32 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-700/60 bg-slate-900/30 text-sm text-slate-400 transition-colors hover:border-cyan-500/50 hover:text-cyan-400 disabled:opacity-50"
+            >
+              <i data-lucide="upload" class="h-5 w-5"></i>
+              点击上传图片/视频
+            </button>
+            <div id="media-grid" class="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6"></div>
+            <p id="media-readonly-tip" class="mt-3 text-xs text-slate-500" style="display: none">
+              编辑模式下仅展示已有媒体
+            </p>
+          </div>
+
+          <!-- 聊天记录导入 -->
+          <div class="rounded-xl border border-slate-700/50 bg-slate-800/60 p-5 backdrop-blur-sm">
+            <h3 class="mb-4 flex items-center gap-2 text-base font-medium text-slate-200">
+              <i data-lucide="message-square" class="h-4 w-4 text-cyan-400"></i>
+              聊天记录导入
+            </h3>
+            <div id="chat-existing" class="mb-4 max-h-64 space-y-3 overflow-y-auto rounded-lg bg-slate-900/40 p-3" style="display: none"></div>
+            <div id="chat-editor">
+              <textarea
+                id="f-chat-text"
+                rows="6"
+                placeholder="粘贴聊天记录文本，系统将自动识别发送者和内容..."
+                class="w-full resize-none rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
+              ></textarea>
+              <p class="mt-2 text-xs text-slate-500">支持常见聊天格式，自动识别发送者、时间和内容</p>
+              <div class="mt-3 flex gap-2">
+                <button
+                  id="btn-parse"
+                  type="button"
+                  class="inline-flex items-center gap-2 rounded-lg bg-slate-700/60 px-4 py-2 text-sm text-slate-200 transition-colors hover:bg-slate-700 disabled:opacity-50"
+                >
+                  <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                  解析预览
+                </button>
+                <button
+                  id="btn-clear-chat"
+                  type="button"
+                  class="rounded-lg border border-slate-700/50 px-4 py-2 text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
+                  style="display: none"
+                >
+                  清除聊天记录
+                </button>
+              </div>
+            </div>
+            <p id="chat-readonly-tip" class="mt-3 text-xs text-slate-500" style="display: none">
+              编辑模式下仅展示已有聊天记录
+            </p>
+          </div>
+
+          <!-- 操作 -->
+          <div class="flex justify-end gap-3">
+            <button
+              id="btn-cancel"
+              type="button"
+              class="rounded-lg border border-slate-700/50 px-5 py-2.5 text-sm text-slate-300 transition-colors hover:bg-slate-800"
+            >
+              取消
+            </button>
+            <button
+              id="btn-submit"
+              type="submit"
+              class="inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-5 py-2.5 text-sm font-medium text-slate-900 transition-colors hover:bg-cyan-400 disabled:opacity-50"
+            >
+              <i data-lucide="save" class="h-4 w-4"></i>
+              <span id="btn-submit-label">保存事件</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <!-- 解析预览弹窗 -->
+    <div id="parse-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" style="display: none">
+      <div class="max-h-[80vh] w-full max-w-lg overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-700/50 p-4">
+          <h4 id="parse-modal-title" class="text-base font-medium text-slate-200">解析预览</h4>
+          <button id="btn-parse-close" type="button" class="text-slate-400 transition-colors hover:text-slate-200">
+            <i data-lucide="x" class="h-5 w-5"></i>
+          </button>
+        </div>
+        <div id="parse-modal-body" class="max-h-96 space-y-3 overflow-y-auto p-4"></div>
+        <div class="flex justify-end gap-2 border-t border-slate-700/50 p-4">
+          <button
+            id="btn-parse-cancel"
+            type="button"
+            class="rounded-lg border border-slate-700/50 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-700/60"
+          >
+            取消
+          </button>
+          <button
+            id="btn-parse-confirm"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-cyan-400 disabled:opacity-50"
+          >
+            <i data-lucide="check" class="h-4 w-4"></i>
+            确认使用
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="toast-root"
+      class="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-2"
+    ></div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/event.js"></script>
+  </body>
+</html>
