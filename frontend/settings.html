@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>系统设置 · 时间线复盘</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="theme-color" content="#000000" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body class="min-h-screen bg-slate-900 text-slate-100">
+    <div id="app-header"></div>
+
+    <main class="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
+      <div class="space-y-6">
+        <!-- 页头 -->
+        <div>
+          <h2 class="text-2xl font-semibold tracking-tight text-slate-100">系统设置</h2>
+          <p class="mt-1 text-sm text-slate-400">配置大模型 API，让智能复盘使用真实模型生成报告</p>
+        </div>
+
+        <!-- 状态条 -->
+        <div
+          id="ai-status"
+          class="flex items-center gap-2 rounded-xl border border-slate-700/50 bg-slate-800/40 px-4 py-3 text-sm text-slate-300"
+        >
+          <i data-lucide="loader-2" class="spin h-4 w-4 text-cyan-400"></i>
+          <span>正在加载当前配置...</span>
+        </div>
+
+        <!-- 大模型 API 设置 -->
+        <form
+          id="ai-form"
+          class="space-y-5 rounded-xl border border-slate-700/50 bg-slate-800/60 p-5 backdrop-blur-sm"
+          style="display: none"
+        >
+          <h3 class="flex items-center gap-2 text-base font-medium text-slate-200">
+            <i data-lucide="brain-circuit" class="h-4 w-4 text-cyan-400"></i>
+            大模型 API 设置
+          </h3>
+
+          <div>
+            <label class="mb-1.5 block text-sm text-slate-400" for="f-api-key">API Key</label>
+            <div class="relative">
+              <i data-lucide="key-round" class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"></i>
+              <input
+                id="f-api-key"
+                type="password"
+                autocomplete="off"
+                placeholder="sk-..."
+                class="w-full rounded-lg border border-slate-700/50 bg-slate-900/60 py-2 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
+              />
+              <button
+                id="btn-toggle-key"
+                type="button"
+                class="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-1 text-xs text-slate-400 transition-colors hover:text-slate-200"
+              >
+                显示
+              </button>
+            </div>
+            <p id="api-key-hint" class="mt-1.5 text-xs text-slate-500"></p>
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm text-slate-400" for="f-base-url">API 地址（Base URL）</label>
+            <input
+              id="f-base-url"
+              type="text"
+              placeholder="https://api.openai.com/v1"
+              class="w-full rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
+            />
+            <p class="mt-1.5 text-xs text-slate-500">OpenAI 兼容接口地址，无需以 /chat/completions 结尾</p>
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm text-slate-400" for="f-model">模型名称</label>
+            <input
+              id="f-model"
+              type="text"
+              placeholder="gpt-4o-mini"
+              class="w-full rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
+            />
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3 border-t border-slate-700/50 pt-4">
+            <button
+              id="btn-save"
+              type="submit"
+              class="inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-5 py-2.5 text-sm font-medium text-slate-900 transition-colors hover:bg-cyan-400 disabled:opacity-50"
+            >
+              <i data-lucide="save" class="h-4 w-4"></i>
+              保存设置
+            </button>
+            <button
+              id="btn-test"
+              type="button"
+              class="inline-flex items-center gap-2 rounded-lg border border-slate-700/50 px-5 py-2.5 text-sm text-slate-300 transition-colors hover:border-cyan-500/40 hover:text-cyan-400 disabled:opacity-50"
+            >
+              <i data-lucide="plug-zap" class="h-4 w-4"></i>
+              测试连接
+            </button>
+            <p class="text-xs text-slate-500">保存后立即生效，无需重启服务</p>
+          </div>
+        </form>
+
+        <!-- 说明 -->
+        <div class="rounded-xl border border-slate-700/50 bg-slate-800/40 p-5 text-sm text-slate-400">
+          <h3 class="mb-2 flex items-center gap-2 text-sm font-medium text-slate-300">
+            <i data-lucide="info" class="h-4 w-4 text-cyan-400"></i>
+            说明
+          </h3>
+          <ul class="list-inside list-disc space-y-1.5 text-xs leading-relaxed">
+            <li>未配置 API Key 时，「智能复盘」使用本地演示模式生成结构化报告（仅供界面演示）。</li>
+            <li>配置保存到本机数据库，Key 仅打码显示、不回传明文；也可继续沿用 .env 里的 AI_API_KEY / AI_BASE_URL / AI_MODEL。</li>
+            <li>兼容一切 OpenAI 格式接口（如各中转/私有部署），填对应的地址与模型名即可。</li>
+          </ul>
+        </div>
+      </div>
+    </main>
+
+    <div
+      id="toast-root"
+      class="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-2"
+    ></div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/settings.js"></script>
+  </body>
+</html>

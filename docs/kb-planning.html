@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>纪事轴 MemoLine · 知识库化规划 v0.1</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161a21; --panel2:#1c2129; --line:#2a313c;
+    --text:#e6e9ef; --muted:#9aa4b2; --accent:#4fd1c5; --accent2:#6aa3ff;
+    --warn:#f6c177; --danger:#f08a8a; --ok:#7ee0a8;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    line-height:1.6;font-size:15px}
+  a{color:var(--accent2);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 24px 80px}
+  header.top{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:28px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:42px;height:42px;border-radius:11px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:#0b0e12;font-size:20px}
+  h1{font-size:26px;margin:0}
+  .sub{color:var(--muted);margin:6px 0 0;font-size:14px}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .toc a{background:var(--panel);border:1px solid var(--line);padding:6px 12px;border-radius:999px;font-size:13px;color:var(--muted)}
+  .toc a:hover{color:var(--text);border-color:var(--accent);text-decoration:none}
+  section{margin:38px 0}
+  h2{font-size:20px;border-left:3px solid var(--accent);padding-left:12px;margin:0 0 16px}
+  h3{font-size:16px;color:var(--accent);margin:22px 0 8px}
+  p{color:#cfd6e0}
+  .muted{color:var(--muted)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:820px){.grid2,.grid3{grid-template-columns:1fr}}
+  .pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);margin:2px}
+  .pill.m1{color:var(--ok);border-color:#2f5d45;background:#10241a}
+  .pill.m2{color:var(--accent2);border-color:#2f4569;background:#101a2a}
+  .pill.m3{color:var(--warn);border-color:#5d4f2f;background:#241f10}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--muted);font-weight:600}
+  code{background:var(--panel2);padding:1px 6px;border-radius:6px;font-size:13px;color:var(--accent)}
+  ul{margin:8px 0;padding-left:20px}
+  li{margin:4px 0}
+  .note{background:#13202b;border:1px solid #244055;color:#bfe3f2;border-radius:10px;padding:12px 14px;font-size:13.5px;margin:14px 0}
+  .good{background:#16241c;border:1px solid #2f5d45;color:#bfe9d2;border-radius:10px;padding:12px 14px;font-size:13.5px;margin:14px 0}
+  .good b{color:var(--ok)}
+  .risk{background:#241a1a;border:1px solid #5d3535;color:#f0d0d0;border-radius:10px;padding:12px 14px;font-size:13.5px;margin:14px 0}
+  .risk b{color:var(--danger)}
+  .flow{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .fbox{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-size:13.5px;min-width:150px;flex:1}
+  .fbox b{display:block;color:var(--accent);margin-bottom:4px;font-size:14px}
+  .arrow{display:flex;align-items:center;color:var(--muted);font-size:20px}
+  .stage{display:flex;gap:14px;margin:18px 0;flex-wrap:wrap}
+  .stage .st{flex:1;min-width:240px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;position:relative}
+  .st .tag{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted)}
+  .st h4{margin:4px 0 8px;font-size:15px}
+  .st ul{padding-left:18px;font-size:13px;color:#cfd6e0}
+  .timeline{border-left:2px solid var(--line);margin:18px 0 0;padding-left:22px}
+  .tl-item{position:relative;margin-bottom:22px}
+  .tl-item:before{content:"";position:absolute;left:-29px;top:5px;width:12px;height:12px;border-radius:50%;
+    background:var(--accent);box-shadow:0 0 0 3px var(--bg)}
+  .tl-item.blue:before{background:var(--accent2)}
+  .tl-item.amber:before{background:var(--warn)}
+  .tl-item b{display:block;font-size:15px}
+  .tl-item .m{color:var(--muted);font-size:13px}
+  footer{margin-top:60px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="brand">
+    <div class="logo">知</div>
+    <div>
+      <h1>纪事轴 · MemoLine 知识库化规划</h1>
+      <p class="sub">从「时间线事件记录」升级为「个人事件知识库」· 规划 v0.1 · 2026-09-21</p>
+    </div>
+  </div>
+  <nav class="toc">
+    <a href="#s1">① 能不能做成知识库</a>
+    <a href="#s2">② 设计思路</a>
+    <a href="#s3">③ 功能分期</a>
+    <a href="#s4">④ 信息架构 & 页面</a>
+    <a href="#s5">⑤ 数据模型扩展</a>
+    <a href="#s6">⑥ API 设计</a>
+    <a href="#s7">⑦ 技术要点</a>
+    <a href="#s8">⑧ 路线图</a>
+    <a href="#demo">▶ 效果演示页</a>
+  </nav>
+</header>
+
+<div class="note">
+  本文档是<b>规划方案</b>，不改动现有任何代码。现有 <code>docs/memoline-planning.html</code> 定义的产品基线保持不变，
+  本规划在其之上叠加「知识库」能力。配套一个纯静态演示页 <a href="kb-demo.html">kb-demo.html</a>（内置 mock 数据，双击即可预览）。
+</div>
+
+<!-- ① -->
+<section id="s1">
+  <h2>① 能不能做成知识库？—— 能，而且底子很好</h2>
+  <p>知识库的本质是四件事：<b>有条目的记录、有条目间的关系、能聚合、能检索</b>。对照现有系统：</p>
+  <table>
+    <tr><th style="width:24%">知识库要素</th><th style="width:38%">现有系统对应物</th><th>缺口</th></tr>
+    <tr>
+      <td>知识条目</td>
+      <td><code>events</code> 表：时间、地点、描述、标签、<code>event_type</code>（记事/假设/待办/结论）</td>
+      <td>已有。事件类型天然区分了「事实 / 推断 / 行动 / 定论」，比一般笔记软件更贴近知识管理</td>
+    </tr>
+    <tr>
+      <td>证据与素材</td>
+      <td><code>event_media</code>（图文视频）、<code>event_chat_records</code>（聊天记录）</td>
+      <td>已有，知识条目可直接挂证据</td>
+    </tr>
+    <tr>
+      <td>条目间关系</td>
+      <td><code>event_links</code>：引用 / 因果 / 反驳，双向查询</td>
+      <td>关系类型偏少，且还没有「关系强度/置信度」概念</td>
+    </tr>
+    <tr>
+      <td>聚合（主题）</td>
+      <td><code>tags</code> 标签（松散、平铺）</td>
+      <td><b>主要缺口</b>：标签不是主题，没有主题页、没有跨事件汇总叙述</td>
+    </tr>
+    <tr>
+      <td>检索</td>
+      <td>关键词 LIKE 模糊匹配（描述/地点）</td>
+      <td>无全文索引、无相关性排序、无分词</td>
+    </tr>
+    <tr>
+      <td>沉淀产物</td>
+      <td><code>analysis_reports</code>：AI 复盘报告（摘要/时间线/疑点/证据分类）</td>
+      <td>报告是一次性产物，没有回流成可维护的知识条目</td>
+    </tr>
+  </table>
+  <div class="good">
+    <b>结论：</b>系统已经具备知识库 70% 的骨架（条目、关系、证据、AI 分析），
+    只需补上「主题聚合层 + 全文检索 + 图谱呈现」三块，即可从「时间线」升级为「时间线 × 知识库」双视图产品。
+  </div>
+</section>
+
+<!-- ② -->
+<section id="s2">
+  <h2>② 设计思路（核心原则）</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0">双视图，不推翻时间线</h3>
+      <p>时间线仍是录入与浏览的主轴；知识库是事件之上的<b>只读聚合层 + 轻编辑层</b>（主题页可补充人工总结）。
+      所有知识条目仍来自 events，不新增平行数据孤岛。</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">主题是「视图」不是「文件夹」</h3>
+      <p>一个事件可属于多个主题（多标签聚合 + AI 归类），避免传统文件夹的二选一困境。
+      主题支持手动创建与 AI 自动聚类两条来源，手动优先。</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">AI 负责沉淀，人负责确认</h3>
+      <p>大模型把复盘报告、事件链提炼成主题综述、关键结论、待验证假设；
+      生成的知识内容带 <code>ai_generated</code> 标记与来源事件引用，用户可编辑、采纳或丢弃。</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">检索用 SQLite 原生能力</h3>
+      <p>用 <b>FTS5 虚拟表</b>做全文检索（支持中文 trigram 分词），零额外依赖、与现有便携 Python + SQLite 架构完全兼容，
+      不引入 Elasticsearch / 向量库这类重组件。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ③ -->
+<section id="s3">
+  <h2>③ 功能清单（分期）</h2>
+
+  <div class="stage">
+    <div class="st">
+      <span class="tag" style="color:var(--ok)">M1 · 知识库雏形</span>
+      <h4>主题聚合</h4>
+      <ul>
+        <li>主题（topic）数据表 + 事件多对多关联</li>
+        <li>主题列表页：按主题浏览，显示事件数 / 类型分布 / 时间跨度</li>
+        <li>主题详情页：综述 + 时间线子集 + 结论/假设高亮 + 关联证据</li>
+        <li>标签 → 主题的一键升级为手动归类</li>
+        <li>现有搜索升级 FTS5 全文检索（描述/聊天/地点，带高亮）</li>
+      </ul>
+    </div>
+    <div class="st">
+      <span class="tag" style="color:var(--accent2)">M2 · 关系可视化</span>
+      <h4>知识图谱</h4>
+      <ul>
+        <li>事件关系图：节点=事件（按类型着色），边=引用/因果/反驳</li>
+        <li>以主题为中心的 ego 图（只看某主题内的关联网络）</li>
+        <li>孤立事件检测（没有任何 link 的事件提示补关联）</li>
+        <li>关系类型扩展：支持 / 派生 / 疑似相关，新增置信度字段</li>
+        <li>节点点击直达事件详情，图可导出 PNG</li>
+    </ul>
+    </div>
+    <div class="st">
+      <span class="tag" style="color:var(--warn)">M3 · 知识沉淀</span>
+      <h4>AI 知识库化</h4>
+      <ul>
+        <li>一键把复盘报告沉淀为主题综述（可编辑）</li>
+        <li>AI 自动聚类建议主题（对未归类事件批量推荐）</li>
+        <li>结论演进链：同一假设被后续事件支持/反驳的谱系图</li>
+        <li>知识问答：对某主题提问，AI 基于主题内事件回答并引用</li>
+        <li>导出：主题页导出 Markdown / PDF 知识手册</li>
+      </ul>
+    </div>
+  </div>
+
+  <table>
+    <tr><th>功能</th><th style="width:10%">分期</th><th style="width:12%">优先级</th><th>说明</th></tr>
+    <tr><td>主题表 + 事件-主题关联</td><td><span class="pill m1">M1</span></td><td>P0</td><td>知识库的骨架，其余功能都依赖它</td></tr>
+    <tr><td>主题列表 / 详情页</td><td><span class="pill m1">M1</span></td><td>P0</td><td>新页面 <code>kb.html</code>（列表）+ <code>topic.html</code>（详情）</td></tr>
+    <tr><td>FTS5 全文搜索</td><td><span class="pill m1">M1</span></td><td>P0</td><td>trigram 分词兼容中文；触发器同步索引</td></tr>
+    <tr><td>事件关系图谱页</td><td><span class="pill m2">M2</span></td><td>P1</td><td>前端用 vis-network 或自绘 canvas 力导向图</td></tr>
+    <tr><td>主题 ego 图 / 孤立事件</td><td><span class="pill m2">M2</span></td><td>P1</td><td>图谱页的过滤维度</td></tr>
+    <tr><td>关系类型扩展 + 置信度</td><td><span class="pill m2">M2</span></td><td>P2</td><td>沿用 M1.0.4 已上线的 <code>event_links</code> 增量 ALTER</td></tr>
+    <tr><td>报告 → 主题综述沉淀</td><td><span class="pill m3">M3</span></td><td>P1</td><td>复用现有 analysis 管线的输出结构</td></tr>
+    <tr><td>AI 自动聚类建议</td><td><span class="pill m3">M3</span></td><td>P2</td><td>把未归类事件标题+摘要交给 LLM 聚类</td></tr>
+    <tr><td>主题问答（带引用）</td><td><span class="pill m3">M3</span></td><td>P2</td><td>RAG 简化版：主题内事件全文塞进上下文</td></tr>
+    <tr><td>知识手册导出</td><td><span class="pill m3">M3</span></td><td>P2</td><td>Markdown 优先，PDF 复用报告导出通道</td></tr>
+  </table>
+</section>
+
+<!-- ④ -->
+<section id="s4">
+  <h2>④ 信息架构 & 页面流</h2>
+  <div class="flow">
+    <div class="fbox"><b>时间线（现有）</b>录入 / 浏览 / 筛选<br/>＋新增「加入主题」入口</div>
+    <div class="arrow">⇄</div>
+    <div class="fbox"><b>知识库首页（新）</b>主题卡片墙 + 全文搜索框 + 最近沉淀</div>
+    <div class="arrow">→</div>
+    <div class="fbox"><b>主题详情（新）</b>综述 · 子时间线 · 结论/假设板 · 证据 · 小图谱</div>
+    <div class="arrow">→</div>
+    <div class="fbox"><b>图谱页（M2 新）</b>全局/主题两层网络图</div>
+  </div>
+  <ul>
+    <li>顶部导航增加「知识库」Tab，与 时间线 / 复盘 并列；事件详情、复盘报告页互跳。</li>
+    <li>主题详情页是知识库的核心页面：上半是「这篇知识」的叙述（AI 综述 + 人工补充），下半是支撑它的证据（事件、媒体、聊天记录、关联）。</li>
+    <li>搜索结果点击直达事件详情；主题搜索结果直达主题页。</li>
+    <li>视觉沿用现有设计规范：<code>bg-slate-900</code> 底、<code>bg-slate-800/60</code> 卡片、青色 <code>cyan-400</code> 强调、<code>rounded-xl</code>。</li>
+  </ul>
+</section>
+
+<!-- ⑤ -->
+<section id="s5">
+  <h2>⑤ 数据模型扩展（SQLite）</h2>
+  <h3>新增：主题表与关联表</h3>
+  <table>
+    <tr><th>表</th><th>字段</th><th>说明</th></tr>
+    <tr>
+      <td><code>kb_topics</code></td>
+      <td><code>id, name, slug, summary, icon, color, source(manual/ai), created_at, updated_at</code></td>
+      <td>主题条目本身；<code>summary</code> 存 AI 生成或人工编辑的综述（Markdown）</td>
+    </tr>
+    <tr>
+      <td><code>kb_topic_events</code></td>
+      <td><code>topic_id, event_id, added_by(manual/ai), confidence, created_at</code></td>
+      <td>事件 ↔ 主题 多对多；AI 归类带置信度，人工加入视为 1.0</td>
+    </tr>
+    <tr>
+      <td><code>events_fts</code>（FTS5 虚拟表）</td>
+      <td><code>title? description, location, tokenizer=trigram</code></td>
+      <td>全文索引；由 <code>events</code> 上的 INSERT/UPDATE/DELETE 触发器同步</td>
+    </tr>
+    <tr>
+      <td><code>chat_records_fts</code>（可选，M1 内）</td>
+      <td>同上，索引聊天记录 content</td>
+      <td>让「搜一句话」也能命中所属事件</td>
+    </tr>
+  </table>
+  <h3>现有表增量变更（幂等 ALTER，沿用 M1.0.4 的补列模式）</h3>
+  <ul>
+    <li><code>event_links</code> 增列：<code>confidence REAL</code>（置信度 0~1，默认 1）、<code>source(manual/ai)</code>。</li>
+    <li>关系枚举扩展（代码层）：<code>引用 / 因果 / 反驳</code> → 追加 <code>支持 / 派生 / 疑似相关</code>。</li>
+    <li><code>analysis_reports</code> 增列：<code>topic_id</code>（报告沉淀到哪个主题，可空）。</li>
+  </ul>
+  <div class="note">事件本体不加「主题」列——主题关系全部放在中间表，保持 events 表简单，也方便 AI 归类反复重跑而不污染原始数据。</div>
+</section>
+
+<!-- ⑥ -->
+<section id="s6">
+  <h2>⑥ API 设计（草案）</h2>
+  <table>
+    <tr><th style="width:34%">接口</th><th style="width:10%">方法</th><th>说明</th></tr>
+    <tr><td><code>/api/kb/topics</code></td><td>GET / POST</td><td>主题列表（含事件数、类型分布、时间跨度）/ 新建主题</td></tr>
+    <tr><td><code>/api/kb/topics/{id}</code></td><td>GET / PATCH / DELETE</td><td>主题详情（综述 + 事件摘要）/ 改名改综述 / 删除（不删事件）</td></tr>
+    <tr><td><code>/api/kb/topics/{id}/events</code></td><td>POST / DELETE</td><td>事件加入 / 移出主题</td></tr>
+    <tr><td><code>/api/kb/graph</code></td><td>GET</td><td>图谱数据：<code>?topicId=&depth=&types=</code> 返回 nodes + links，M2</td></tr>
+    <tr><td><code>/api/kb/search</code></td><td>GET</td><td>全文搜索：<code>?q=&scope=events,chat&types=&tags=</code>，返回带 <code>&lt;mark&gt;</code> 高亮片段与 bm25 排序</td></tr>
+    <tr><td><code>/api/kb/topics/suggest</code></td><td>POST</td><td>AI 聚类建议：返回未归类事件的建议主题组，M3</td></tr>
+    <tr><td><code>/api/kb/topics/{id}/digest</code></td><td>POST</td><td>把指定复盘报告/事件链沉淀为该主题的 AI 综述，M3</td></tr>
+    <tr><td><code>/api/kb/topics/{id}/ask</code></td><td>POST</td><td>主题内问答，回答带来源事件引用，M3</td></tr>
+    <tr><td><code>/api/kb/topics/{id}/export</code></td><td>GET</td><td>主题知识手册导出 <code>?format=md|pdf</code>，M3</td></tr>
+  </table>
+</section>
+
+<!-- ⑦ -->
+<section id="s7">
+  <h2>⑦ 技术要点与选型</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0">中文全文检索</h3>
+      <ul>
+        <li>SQLite FTS5 的 <code>trigram</code> tokenizer（Python 3.13 内置 sqlite3 已可用，需 <code>SQLITE_FTS5_TRIGRAM</code>，实测标准发行版支持）。</li>
+        <li>不可用时降级：jieba 分词 + 普通索引表（仍零外部服务）。</li>
+        <li>排序用内置 <code>bm25()</code>；片段高亮用 <code>snippet()</code>。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">图谱渲染</h3>
+      <ul>
+        <li>前端零构建约束下，优先 canvas 自绘力导向（约 200 行）或 <code>vis-network</code> CDN。</li>
+        <li>首期限定节点数 ≤ 300（超出按主题采样），避免卡顿。</li>
+        <li>布局结果可缓存到 localStorage 之外——注意本项目 artifact 规则：用内存变量，不用浏览器存储。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">AI 归类与综述</h3>
+      <ul>
+        <li>沿用现有 OpenAI 兼容通道与 mock 降级机制。</li>
+        <li>聚类建议输出 JSON schema 校验（复用 <code>ai_report_parser</code> 的解析套路）。</li>
+        <li>所有 AI 写入均落 <code>source='ai'</code> + 置信度，人工操作可覆盖。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">迁移与兼容</h3>
+      <ul>
+        <li>建表 / 补列全部幂等，旧 <code>data/app.db</code> 直接开库升级，与 <code>event_type</code> 补列同一模式。</li>
+        <li>FTS 虚拟表首次创建时用 <code>INSERT INTO … SELECT</code> 全量回填一次。</li>
+        <li>知识库路由独立成 <code>routers/kb.py</code>，不侵入 events 现有逻辑。</li>
+      </ul>
+    </div>
+  </div>
+  <div class="risk"><b>风险：</b>AI 自动归类可能错挂主题 → 缓解：AI 归类默认进入「待确认」状态，主题页显式区分「已确认 / 待确认」两栏，用户批量确认后才计入综述。</div>
+</section>
+
+<!-- ⑧ -->
+<section id="s8">
+  <h2>⑧ 路线图</h2>
+  <div class="timeline">
+    <div class="tl-item">
+      <b>M1 主题聚合 + 全文搜索（1~1.5 周）</b>
+      <p class="m">kb_topics 建表、主题列表/详情页、事件「加入主题」、FTS5 搜索升级。做完即达到演示页「主题聚合」「知识搜索」两个视图的效果。</p>
+    </div>
+    <div class="tl-item blue">
+      <b>M2 知识图谱（1 周）</b>
+      <p class="m">图谱页、主题 ego 图、关系类型与置信度扩展、孤立事件提示。达到演示页「知识图谱」视图的效果。</p>
+    </div>
+    <div class="tl-item amber">
+      <b>M3 AI 沉淀与问答（1~2 周）</b>
+      <p class="m">报告→综述沉淀、AI 聚类建议、主题问答、知识手册导出。达到演示页「Wiki 文档」视图的完整度（M1 先做人工编辑版综述）。</p>
+    </div>
+  </div>
+  <p style="margin-top:14px">每个里程碑都保持「拷目录即运行」的便携性：不新增任何需要安装的服务端组件。</p>
+</section>
+
+<!-- demo -->
+<section id="demo">
+  <h2>▶ 效果演示页</h2>
+  <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+    <div>
+      <p style="margin:0"><b>kb-demo.html</b> —— 知识库概念的静态原型，内置 mock 数据，覆盖 M1~M3 的核心界面：
+      主题聚合、知识图谱、Wiki 式主题文档、全文搜索。</p>
+      <p class="muted" style="font-size:13px;margin-top:6px">纯前端演示，双击打开即可，不需要启动后端。</p>
+    </div>
+    <a href="kb-demo.html" style="background:var(--accent);color:#0b0e12;font-weight:700;padding:10px 22px;border-radius:10px;white-space:nowrap">打开演示页 →</a>
+  </div>
+</section>
+
+<footer>
+  纪事轴 MemoLine · 知识库化规划 v0.1 · 2026-09-21 ｜ 关联文档：<a href="memoline-planning.html">产品总规划 v0.2</a> ｜ 本规划为纸面方案，未改动任何现有代码
+</footer>
+
+</div>
+</body>
+</html>

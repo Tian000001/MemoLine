@@ -9,6 +9,7 @@
     { page: 'index.html', label: '时间线', icon: 'clock' },
     { page: 'event.html', label: '新建事件', icon: 'plus-circle' },
     { page: 'analysis.html', label: '智能复盘', icon: 'bar-chart-3' },
+    { page: 'settings.html', label: '系统设置', icon: 'settings' },
   ];
 
   function currentPage() {
@@ -62,6 +63,13 @@
     }
   }
 
+  var THEME_TOGGLE_HTML =
+    '    <button id="theme-toggle" type="button" ' +
+    '      class="ml-1 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700/50 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200 sm:ml-2" ' +
+    '      title="切换到浅色" aria-label="切换深浅色">' +
+    '      <i data-lucide="sun" class="h-4 w-4"></i>' +
+    '    </button>';
+
   var HEADER_HTML_TEMPLATE =
     '<header class="sticky top-0 z-40 border-b border-slate-700/50 bg-slate-800/80 backdrop-blur-md">' +
     '  <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">' +
@@ -75,6 +83,7 @@
     '      </div>' +
     '    </a>' +
     '    <nav class="flex items-center gap-1">__NAV__</nav>' +
+    THEME_TOGGLE_HTML +
     '  </div>' +
     '</header>';
 
@@ -108,6 +117,25 @@
     }).join('');
 
     host.innerHTML = HEADER_HTML_TEMPLATE.replace('__NAV__', nav);
+
+    // 主题切换按钮：根据当前 data-theme 设定初始图标，并绑定点击
+    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    var tbtn = host.querySelector('#theme-toggle');
+    if (tbtn) {
+      tbtn.querySelector('i').setAttribute('data-lucide', isLight ? 'moon' : 'sun');
+      tbtn.setAttribute('title', isLight ? '切换到深色' : '切换到浅色');
+      tbtn.setAttribute('aria-label', isLight ? '切换到深色' : '切换到浅色');
+      tbtn.addEventListener('click', function () {
+        if (global.toggleTheme) global.toggleTheme();
+        var light = document.documentElement.getAttribute('data-theme') === 'light';
+        tbtn.innerHTML = '<i data-lucide="' + (light ? 'moon' : 'sun') + '" class="h-4 w-4"></i>';
+        tbtn.setAttribute('title', light ? '切换到深色' : '切换到浅色');
+        if (global.App && App.ui && typeof App.ui.refreshIcons === 'function') {
+          App.ui.refreshIcons();
+        }
+      });
+    }
+
     refreshIcons();
   }
 

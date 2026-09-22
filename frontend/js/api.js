@@ -96,6 +96,24 @@
     deleteEvent: function (id) {
       return request('/events/' + encodeURIComponent(id), { method: 'DELETE' });
     },
+    getLinks: function (eventId) {
+      return request('/events/' + encodeURIComponent(eventId) + '/links');
+    },
+    createLink: function (data) {
+      return request('/links', { method: 'POST', body: data });
+    },
+    deleteLink: function (id) {
+      return request('/links/' + encodeURIComponent(id), { method: 'DELETE' });
+    },
+    getAiSettings: function () {
+      return request('/settings/ai');
+    },
+    updateAiSettings: function (data) {
+      return request('/settings/ai', { method: 'PUT', body: data });
+    },
+    testAiSettings: function (data) {
+      return request('/settings/ai/test', { method: 'POST', body: data || {} });
+    },
     parseChat: function (text) {
       return request('/events/parse-chat', { method: 'POST', body: { text: text } });
     },

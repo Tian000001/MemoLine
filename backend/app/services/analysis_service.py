@@ -14,12 +14,13 @@ import urllib.request
 import uuid
 from typing import Any, Dict, List, Optional, Sequence
 
-from ..config import AI_API_KEY, AI_BASE_URL, AI_MODEL, ai_prompt
+from ..config import ai_prompt
 from ..db import get_db
 from ..errors import NotFoundError
 from ..schemas import AnalysisReport, AnalysisReportListResponse, CreateAnalysisRequest
 from ..utils.ai_report_parser import parse_ai_report
 from ..utils.timeutil import now_iso
+from .settings_service import resolve_ai_config
 
 _AI_TIMEOUT_SECONDS = 120
 
@@ -125,9 +126,11 @@ def generate_report(report_id: str, dto: CreateAnalysisRequest) -> None:
         event_list = _fetch_events(dto)
         timeline_content = _build_timeline_content(event_list)
 
+        # 每次生成时实时解析配置：设置页保存后立即生效，无需重启
+        cfg = resolve_ai_config()
         full_text = (
-            _call_real_ai(timeline_content)
-            if AI_API_KEY
+            _call_real_ai(timeline_content, cfg)
+            if cfg.api_key
             else _build_local_mock(event_list)
         )
 
@@ -225,10 +228,10 @@ def _build_timeline_content(event_list: Sequence[Dict[str, Any]]) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-def _call_real_ai(content: str) -> str:
-    """OpenAI 兼容接口调用（标准库实现）。"""
+def _call_real_ai(content: str, cfg) -> str:
+    """OpenAI 兼容接口调用（标准库实现）。配置由 settings_service 实时解析。"""
     payload = {
-        "model": AI_MODEL,
+        "model": cfg.model,
         "temperature": 0.5,
         "max_tokens": 8192,
         "messages": [
@@ -237,11 +240,11 @@ def _call_real_ai(content: str) -> str:
         ],
     }
     request = urllib.request.Request(
-        f"{AI_BASE_URL}/chat/completions",
+        f"{cfg.base_url}/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {AI_API_KEY}",
+            "Authorization": f"Bearer {cfg.api_key}",
         },
         method="POST",
     )

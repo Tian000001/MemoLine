@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>事件时间线 · 时间线复盘</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <meta name="theme-color" content="#11110F" />
+    <meta name="theme-color" content="#000000" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="js/theme.js"></script>
     <link rel="stylesheet" href="css/app.css" />
@@ -101,6 +101,22 @@
               type="date"
               class="w-full rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 focus:border-cyan-500/50 focus:outline-none"
             />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs text-slate-400" for="f-type">事件类型</label>
+            <div class="relative">
+              <i data-lucide="layers" class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"></i>
+              <select
+                id="f-type"
+                class="w-full appearance-none rounded-lg border border-slate-700/50 bg-slate-900/60 py-2 pl-9 pr-3 text-sm text-slate-200 focus:border-cyan-500/50 focus:outline-none"
+              >
+                <option value="">全部类型</option>
+                <option value="记事">记事</option>
+                <option value="假设">假设</option>
+                <option value="待办">待办</option>
+                <option value="结论">结论</option>
+              </select>
+            </div>
           </div>
           <div id="clear-filter-wrap" class="sm:col-span-2 lg:col-span-4" style="display: none">
             <button

@@ -1,6 +1,6 @@
 /**
  * 事件录入 / 编辑页面逻辑。
- * 对应原 client/src/pages/EventFormPage/*（含 MediaUpload、ChatRecordImport）。
+ * 对应原 client/src/pages/EventFormPage/*（含 MediaUpload、ChatRecordImport、事件关联）。
  */
 (function () {
   'use strict';
@@ -8,6 +8,8 @@
   var api = window.App.api;
   var ui = window.App.ui;
   var esc = ui.esc;
+
+  var REL_LABEL = { reference: '引用', causal: '因果', refute: '反驳' };
 
   var state = {
     id: null,
@@ -22,6 +24,8 @@
     confirmedRecords: [],
     existingChatRecords: [],
     parsedRecords: [],
+    links: [], // 事件关联（编辑模式）
+    allEvents: [], // 关联对象候选
   };
 
   var el = {};
@@ -33,6 +37,7 @@
     el.form = document.getElementById('event-form');
     el.time = document.getElementById('f-time');
     el.location = document.getElementById('f-location');
+    el.type = document.getElementById('f-type');
     el.description = document.getElementById('f-description');
     el.tagInput = document.getElementById('f-tag-input');
     el.tagList = document.getElementById('tag-list');
@@ -46,6 +51,11 @@
     el.parse = document.getElementById('btn-parse');
     el.clearChat = document.getElementById('btn-clear-chat');
     el.chatTip = document.getElementById('chat-readonly-tip');
+    el.linkSection = document.getElementById('link-section');
+    el.linkTarget = document.getElementById('f-link-target');
+    el.linkRelation = document.getElementById('f-link-relation');
+    el.linkAdd = document.getElementById('btn-add-link');
+    el.linkList = document.getElementById('link-list');
     el.cancel = document.getElementById('btn-cancel');
     el.submit = document.getElementById('btn-submit');
     el.submitLabel = document.getElementById('btn-submit-label');
@@ -316,6 +326,116 @@
     }
   }
 
+  /* ---------------------------------------------------------- 事件关联 */
+
+  function renderLinks() {
+    if (!state.links || state.links.length === 0) {
+      el.linkList.innerHTML =
+        '<p class="text-xs text-slate-500">暂无关联事件。选择上方的事件与关系后点击「关联」。</p>';
+      ui.refreshIcons();
+      return;
+    }
+
+    el.linkList.innerHTML = state.links
+      .map(function (lk) {
+        var other = lk.relatedEvent || {};
+        var rel = REL_LABEL[lk.relation] || lk.relation;
+        var dirLabel = lk.direction === 'in' ? '← 指向本事件' : '→ 由本事件发起';
+        return (
+          '<div class="flex items-center justify-between gap-3 rounded-lg border border-slate-700/50 bg-slate-900/40 px-3 py-2">' +
+          '<div class="min-w-0 flex-1">' +
+          '<div class="flex items-center gap-2 text-xs">' +
+          '<span class="rounded-full bg-cyan-500/15 px-2 py-0.5 text-cyan-300">' +
+          esc(rel) +
+          '</span>' +
+          '<span class="text-slate-500">' +
+          esc(dirLabel) +
+          '</span>' +
+          '</div>' +
+          '<p class="mt-1 truncate text-sm text-slate-200">' +
+          esc(other.description || '') +
+          '</p>' +
+          '<p class="mt-0.5 truncate text-[11px] text-slate-500">' +
+          esc(ui.formatDateTime(other.eventTime || '')) +
+          '</p>' +
+          '</div>' +
+          '<button type="button" data-remove-link="' +
+          esc(lk.id) +
+          '" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-400" aria-label="取消关联">' +
+          '<i data-lucide="unlink" class="h-4 w-4"></i></button>' +
+          '</div>'
+        );
+      })
+      .join('');
+    ui.refreshIcons();
+  }
+
+  async function loadCandidateEvents() {
+    try {
+      var res = await api.getEvents({ page: 1, pageSize: 200 });
+      state.allEvents = (res.items || []).filter(function (e) {
+        return e.id !== state.id;
+      });
+      if (state.allEvents.length === 0) {
+        el.linkTarget.innerHTML = '<option value="">暂无其他事件可关联</option>';
+        el.linkAdd.disabled = true;
+        return;
+      }
+      el.linkTarget.innerHTML =
+        '<option value="">选择要关联的事件…</option>' +
+        state.allEvents
+          .map(function (e) {
+            var label = (e.eventType || '记事') + ' · ' + (e.description || '').slice(0, 24);
+            return '<option value="' + esc(e.id) + '">' + esc(label) + '</option>';
+          })
+          .join('');
+      el.linkAdd.disabled = false;
+    } catch (error) {
+      el.linkTarget.innerHTML = '<option value="">加载事件列表失败</option>';
+      el.linkAdd.disabled = true;
+    }
+  }
+
+  async function handleAddLink() {
+    var target = el.linkTarget.value;
+    if (!target) {
+      ui.toast('请选择要关联的事件', 'warning');
+      return;
+    }
+    if (!state.id) return;
+
+    el.linkAdd.disabled = true;
+    try {
+      var link = await api.createLink({
+        fromEvent: state.id,
+        toEvent: target,
+        relation: el.linkRelation.value,
+      });
+      state.links.push(link);
+      renderLinks();
+      el.linkTarget.value = '';
+      ui.toast('已关联事件', 'success');
+    } catch (error) {
+      ui.toast(error.message || '关联失败', 'error');
+    } finally {
+      el.linkAdd.disabled = false;
+    }
+  }
+
+  async function handleRemoveLink(linkId) {
+    if (!window.confirm('确定取消该关联吗？')) return;
+    try {
+      await api.deleteLink(linkId);
+      state.links = state.links.filter(function (l) {
+        return l.id !== linkId;
+      });
+      renderLinks();
+      ui.toast('已取消关联', 'success');
+    } catch (error) {
+      ui.toast(error.message || '取消关联失败', 'error');
+    }
+  }
+
   /* -------------------------------------------------------------- 初始化 */
 
   function applyReadOnlyMode() {
@@ -336,10 +456,13 @@
       var data = await api.getEvent(state.id);
       el.time.value = toLocalInputValue(data.eventTime);
       el.location.value = data.location || '';
+      el.type.value = data.eventType || '记事';
       el.description.value = data.description || '';
       state.tags = data.tags || [];
       state.existingMedia = data.media || [];
       state.existingChatRecords = data.chatRecords || [];
+      state.links = data.links || [];
+      await loadCandidateEvents();
     } catch (error) {
       ui.toast(error.message || '加载事件详情失败', 'error');
     } finally {
@@ -348,6 +471,7 @@
       renderTags();
       renderMedia();
       renderChatExisting();
+      renderLinks();
       applyReadOnlyMode();
       ui.refreshIcons();
     }
@@ -396,6 +520,7 @@
         location: el.location.value || undefined,
         description: el.description.value.trim(),
         tags: state.tags,
+        eventType: el.type.value || '记事',
       };
 
       if (state.isEdit) {
@@ -491,6 +616,13 @@
       ui.toast('已确认 ' + state.confirmedRecords.length + ' 条聊天记录', 'success');
     });
 
+    el.linkAdd.addEventListener('click', handleAddLink);
+    el.linkList.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-remove-link]');
+      if (!button) return;
+      handleRemoveLink(button.getAttribute('data-remove-link'));
+    });
+
     el.form.addEventListener('submit', handleSubmit);
   }
 
@@ -507,6 +639,9 @@
       el.submit.innerHTML =
         '<i data-lucide="save" class="h-4 w-4"></i><span id="btn-submit-label">更新事件</span>';
       el.submitLabel = document.getElementById('btn-submit-label');
+    } else {
+      // 新建模式：还没有事件 id，无法建立关联，隐藏关联区块
+      el.linkSection.style.display = 'none';
     }
 
     ui.renderHeader();

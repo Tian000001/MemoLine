@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>新建事件 · 时间线复盘</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <meta name="theme-color" content="#11110F" />
+    <meta name="theme-color" content="#000000" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="js/theme.js"></script>
     <link rel="stylesheet" href="css/app.css" />
@@ -75,6 +75,22 @@
                 placeholder="详细描述事件经过..."
                 class="w-full resize-none rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
               ></textarea>
+            </div>
+            <div class="mt-4">
+              <label class="mb-1.5 block text-sm text-slate-400" for="f-type">事件类型</label>
+              <div class="relative max-w-xs">
+                <i data-lucide="layers" class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"></i>
+                <select
+                  id="f-type"
+                  class="w-full appearance-none rounded-lg border border-slate-700/50 bg-slate-900/60 py-2 pl-9 pr-3 text-sm text-slate-200 focus:border-cyan-500/50 focus:outline-none"
+                >
+                  <option value="记事">记事</option>
+                  <option value="假设">假设</option>
+                  <option value="待办">待办</option>
+                  <option value="结论">结论</option>
+                </select>
+              </div>
+              <p class="mt-1.5 text-xs text-slate-500">记事为默认；假设/待办/结论用于标记事件的推理属性</p>
             </div>
           </div>
 
@@ -151,6 +167,45 @@
             <p id="chat-readonly-tip" class="mt-3 text-xs text-slate-500" style="display: none">
               编辑模式下仅展示已有聊天记录
             </p>
+          </div>
+
+          <!-- 关联事件 -->
+          <div id="link-section" class="rounded-xl border border-slate-700/50 bg-slate-800/60 p-5 backdrop-blur-sm">
+            <h3 class="mb-4 flex items-center gap-2 text-base font-medium text-slate-200">
+              <i data-lucide="git-branch" class="h-4 w-4 text-cyan-400"></i>
+              关联事件
+            </h3>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div class="flex-1">
+                <label class="mb-1.5 block text-sm text-slate-400" for="f-link-target">关联对象</label>
+                <select
+                  id="f-link-target"
+                  class="w-full rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 focus:border-cyan-500/50 focus:outline-none"
+                >
+                  <option value="">选择要关联的事件…</option>
+                </select>
+              </div>
+              <div class="w-full sm:w-40">
+                <label class="mb-1.5 block text-sm text-slate-400" for="f-link-relation">关系</label>
+                <select
+                  id="f-link-relation"
+                  class="w-full appearance-none rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 focus:border-cyan-500/50 focus:outline-none"
+                >
+                  <option value="reference">引用</option>
+                  <option value="causal">因果</option>
+                  <option value="refute">反驳</option>
+                </select>
+              </div>
+              <button
+                id="btn-add-link"
+                type="button"
+                class="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-700/60 px-4 py-2 text-sm text-slate-200 transition-colors hover:bg-slate-700 disabled:opacity-50"
+              >
+                <i data-lucide="link" class="h-4 w-4"></i>
+                关联
+              </button>
+            </div>
+            <div id="link-list" class="mt-4 space-y-2"></div>
           </div>
 
           <!-- 操作 -->

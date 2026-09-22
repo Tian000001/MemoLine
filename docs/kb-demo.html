@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>纪事轴 MemoLine · 知识库演示（静态原型）</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+  .tab-btn.active{color:#22d3ee;border-color:#22d3ee;background:rgba(34,211,238,.08)}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
+  mark{background:rgba(34,211,238,.25);color:#a5f3fc;border-radius:3px;padding:0 2px}
+  .view{display:none}.view.active{display:block}
+  #graph-canvas{cursor:grab}
+  #graph-canvas.dragging{cursor:grabbing}
+  .fade-in{animation:fadeIn .25s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100">
+
+<!-- 顶栏 -->
+<header class="sticky top-0 z-20 border-b border-slate-700/50 bg-slate-900/85 backdrop-blur">
+  <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
+    <div class="flex items-center gap-2.5">
+      <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 text-sm font-extrabold text-slate-900">知</div>
+      <div>
+        <div class="text-sm font-semibold tracking-tight">纪事轴 · 知识库</div>
+        <div class="text-[11px] text-slate-500">静态原型演示 · mock 数据</div>
+      </div>
+    </div>
+    <nav class="ml-auto flex gap-1 text-sm">
+      <button data-view="topics" class="tab-btn active rounded-lg border border-transparent px-3 py-1.5 text-slate-400 transition-colors hover:text-slate-100">主题聚合</button>
+      <button data-view="graph"  class="tab-btn rounded-lg border border-slate-700/50 px-3 py-1.5 text-slate-400 transition-colors hover:text-slate-100">知识图谱</button>
+      <button data-view="wiki"   class="tab-btn rounded-lg border border-slate-700/50 px-3 py-1.5 text-slate-400 transition-colors hover:text-slate-100">知识文档</button>
+      <button data-view="search" class="tab-btn rounded-lg border border-slate-700/50 px-3 py-1.5 text-slate-400 transition-colors hover:text-slate-100">全文搜索</button>
+    </nav>
+    <a href="kb-planning.html" class="rounded-lg px-3 py-1.5 text-xs text-slate-500 hover:text-cyan-400">规划文档 →</a>
+  </div>
+</header>
+
+<main class="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+
+<!-- ① 主题聚合 -->
+<section id="view-topics" class="view active">
+  <h2 class="text-2xl font-semibold tracking-tight">知识库 · 主题</h2>
+  <p class="mt-1 mb-5 text-sm text-slate-400">事件按主题聚合，一个事件可属于多个主题。点击主题查看其知识沉淀。</p>
+  <div id="topic-grid" class="grid gap-5 sm:grid-cols-2"></div>
+</section>
+
+<!-- ② 知识图谱 -->
+<section id="view-graph" class="view">
+  <div class="mb-4 flex flex-wrap items-center gap-3">
+    <div>
+      <h2 class="text-2xl font-semibold tracking-tight">知识图谱</h2>
+      <p class="mt-1 text-sm text-slate-400">节点 = 事件（按类型着色），连线 = 关联（引用 / 因果 / 反驳）。可拖拽、点击节点查看详情。</p>
+    </div>
+    <div class="ml-auto flex gap-1.5" id="graph-filter"></div>
+  </div>
+  <div class="grid gap-5 lg:grid-cols-[1fr_280px]">
+    <div class="rounded-xl border border-slate-700/50 bg-slate-800/60 p-2">
+      <canvas id="graph-canvas" class="h-[480px] w-full rounded-lg"></canvas>
+      <div class="flex flex-wrap gap-x-5 gap-y-1 px-3 py-2 text-xs text-slate-400">
+        <span><i class="dot" style="background:#94a3b8"></i> 记事</span>
+        <span><i class="dot" style="background:#fbbf24"></i> 假设</span>
+        <span><i class="dot" style="background:#60a5fa"></i> 待办</span>
+        <span><i class="dot" style="background:#34d399"></i> 结论</span>
+        <span class="ml-2"><i class="line" style="background:#64748b"></i> 引用</span>
+        <span><i class="line" style="background:#f87171"></i> 因果</span>
+        <span><i class="line" style="background:#c084fc;border-top-style:dashed"></i> 反驳</span>
+      </div>
+    </div>
+    <aside id="graph-side" class="rounded-xl border border-slate-700/50 bg-slate-800/60 p-5 text-sm">
+      <p class="text-slate-500">点击左侧节点查看详情与关联。</p>
+    </aside>
+  </div>
+</section>
+<style>.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:baseline}.line{display:inline-block;width:16px;border-top:2px solid;margin-right:5px;vertical-align:middle}</style>
+
+<!-- ③ Wiki 知识文档 -->
+<section id="view-wiki" class="view">
+  <div class="mb-4">
+    <h2 class="text-2xl font-semibold tracking-tight">知识文档</h2>
+    <p class="mt-1 text-sm text-slate-400">主题的综述 + 关键结论 + 待验证假设，由复盘报告沉淀、人工编辑（M3 能力，这里为演示内容）。</p>
+  </div>
+  <div class="grid gap-5 lg:grid-cols-[220px_1fr]">
+    <aside class="h-fit rounded-xl border border-slate-700/50 bg-slate-800/60 p-4">
+      <div class="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">目录</div>
+      <nav id="wiki-toc" class="space-y-1 text-sm"></nav>
+    </aside>
+    <article id="wiki-body" class="space-y-5"></article>
+  </div>
+</section>
+
+<!-- ④ 全文搜索 -->
+<section id="view-search" class="view">
+  <h2 class="text-2xl font-semibold tracking-tight">全文搜索</h2>
+  <p class="mt-1 mb-4 text-sm text-slate-400">FTS5 全文检索示意（前端 mock：对描述、标签、聊天内容做包含匹配 + 高亮）。</p>
+  <div class="mb-4 rounded-xl border border-slate-700/50 bg-slate-800/40 p-4">
+    <div class="flex gap-3">
+      <input id="q" type="text" placeholder="试试：违约 / 瓷砖 / 现金流 / 血压" class="flex-1 rounded-lg border border-slate-700 bg-slate-900/70 px-4 py-2.5 text-sm outline-none placeholder:text-slate-600 focus:border-cyan-500/60" />
+    </div>
+    <div class="mt-3 flex flex-wrap gap-1.5" id="search-filters"></div>
+  </div>
+  <div id="search-count" class="mb-3 text-xs text-slate-500"></div>
+  <div id="search-results" class="space-y-3"></div>
+</section>
+
+</main>
+
+<footer class="mx-auto max-w-6xl px-6 pb-10 pt-4 text-xs text-slate-600">
+  MemoLine 知识库静态原型 · 数据均为演示用 mock · 配套规划见 <a class="text-slate-500 hover:text-cyan-400" href="kb-planning.html">kb-planning.html</a>
+</footer>
+
+<script>
+/* ================= mock 数据 ================= */
+const TOPICS = [
+  { id:"t1", name:"客户A回款纠纷", icon:"⚖", desc:"从合同签署到法务介入的完整事件链，含 2 条结论与 3 条待验证假设。", span:"2026-03 ~ 2026-08" },
+  { id:"t2", name:"家装过程记录", icon:"🏠", desc:"装修各阶段关键节点、供应商问题与验收结论的时间线沉淀。", span:"2026-04 ~ 2026-09" },
+  { id:"t3", name:"O2O门店调研", icon:"📉", desc:"三家竞品门店走访记录与「重资产扩张导致现金流断裂」假设的验证过程。", span:"2026-06 ~ 2026-07" },
+  { id:"t4", name:"个人健康跟踪", icon:"❤", desc:"体检指标异常 → 干预计划 → 复查结论的闭环记录。", span:"2026-05 ~ 2026-09" },
+];
+const EVENTS = [
+  {id:"e1",t:"t1",d:"2026-03-12",type:"记事",title:"签订年度服务合同",desc:"与客户A签订年度服务合同，约定按季度结算，账期 30 天。合同扫描件已归档。",tags:["合同","客户A"],links:[]},
+  {id:"e2",t:"t1",d:"2026-04-02",type:"记事",title:"Q1 验收会议",desc:"Q1 交付物验收通过，会议纪要确认无遗留问题，具备开票条件。",tags:["验收","客户A"],links:[{to:"e1",rel:"引用"}]},
+  {id:"e3",t:"t1",d:"2026-04-05",type:"待办",title:"寄送 Q1 发票",desc:"按验收纪要寄送发票，快递单号留档。跟进 30 天账期到期日 5 月 5 日。",tags:["发票"],links:[{to:"e2",rel:"引用"}]},
+  {id:"e4",t:"t1",d:"2026-05-20",type:"记事",title:"首次催款电话",desc:"账期逾期 15 天。对方财务称「流程中」，与业务负责人沟通无明确承诺。通话录音已导入。",tags:["催款","客户A"],links:[{to:"e3",rel:"因果"}]},
+  {id:"e5",t:"t1",d:"2026-05-22",type:"假设",title:"疑似现金流紧张",desc:"结合行业传闻与其母公司 4 月质押公告，推测逾期非流程问题而是客户A现金流紧张。",tags:["风险","假设"],links:[{to:"e4",rel:"因果"}]},
+  {id:"e6",t:"t1",d:"2026-06-01",type:"记事",title:"走访客户A门店",desc:"实地看到客户A两家门店关闭一家，员工称「在收缩」。与假设方向一致。",tags:["走访","证据"],links:[{to:"e5",rel:"引用"}]},
+  {id:"e7",t:"t1",d:"2026-06-18",type:"假设",title:"或将以货款抵广告费",desc:"客户A提出「用等值广告投放抵扣欠款」方案，推测其意在避免现金支出，需警惕债务展期话术。",tags:["假设","谈判"],links:[{to:"e5",rel:"引用"}]},
+  {id:"e8",t:"t1",d:"2026-07-02",type:"记事",title:"第二次催款函",desc:"发送正式催款函（EMS 留痕），附合同条款、发票与验收纪要编号。",tags:["催款"],links:[{to:"e3",rel:"引用"},{to:"e4",rel:"因果"}]},
+  {id:"e9",t:"t1",d:"2026-07-10",type:"结论",title:"拒绝抵扣方案",desc:"内部决策：不接受广告抵扣，坚持现金回款，同时暂停新交付。此结论已邮件告知对方。",tags:["决策"],links:[{to:"e7",rel:"反驳"}]},
+  {id:"e10",t:"t1",d:"2026-08-01",type:"记事",title:"法务函发出",desc:"委托律师发送律师函，主张 Q1 欠款及违约金。证据包由时间线导出自动生成。",tags:["法务"],links:[{to:"e9",rel:"因果"},{to:"e6",rel:"引用"}]},
+  {id:"e11",t:"t1",d:"2026-08-25",type:"结论",title:"收回 80% 回款",desc:"客户A支付 80% 欠款并承诺 9 月底结清。假设「现金流紧张」得到印证。",tags:["回款","客户A"],links:[{to:"e10",rel:"因果"},{to:"e5",rel:"引用"}]},
+  {id:"e12",t:"t2",d:"2026-04-10",type:"记事",title:"水电改造完工",desc:"水电改造验收，打压测试合格。拍照留档 32 张，隐蔽管线走向已标注。",tags:["装修","水电"],links:[]},
+  {id:"e13",t:"t2",d:"2026-05-06",type:"记事",title:"瓷砖到货色差",desc:"第二批瓷砖与样板存在明显色差，商家称「批次差异属正常范围」。现场对比照片已上传。",tags:["装修","纠纷"],links:[{to:"e12",rel:"引用"}]},
+  {id:"e14",t:"t2",d:"2026-05-08",type:"假设",title:"可据此要求换货",desc:"查《消费者权益保护法》及购货合同：色差超出样板合理范围可主张换货。合同条款截图待补。",tags:["法律","假设"],links:[{to:"e13",rel:"因果"}]},
+  {id:"e15",t:"t2",d:"2026-06-15",type:"结论",title:"换货并补偿工期",desc:"商家同意全批换货并补偿 10 天工期违约金。关键证据为合同样板条款与到货对比照片。",tags:["装修","结论"],links:[{to:"e14",rel:"引用"}]},
+  {id:"e16",t:"t3",d:"2026-06-03",type:"记事",title:"走访竞品甲门店",desc:"竞品甲关闭 3 家门店中的 1 家，客流尚可但租金高企。店员访谈记录已导入。",tags:["调研","竞品"],links:[]},
+  {id:"e17",t:"t3",d:"2026-06-10",type:"记事",title:"走访竞品乙/丙",desc:"乙连亏 6 个月仍在扩张；丙已转向轻资产加盟。两家的账期都对上游供应商形成占压。",tags:["调研"],links:[{to:"e16",rel:"引用"}]},
+  {id:"e18",t:"t3",d:"2026-06-20",type:"假设",title:"重资产是亏损主因",desc:"对比三家的共性：固定成本占比>60% 者全部亏损。提出假设：O2O 门店亏损主因是重资产扩张而非客流。",tags:["分析","假设"],links:[{to:"e17",rel:"因果"}]},
+  {id:"e19",t:"t3",d:"2026-07-15",type:"结论",title:"假设部分成立",desc:"补充财务数据后修正：重资产是放大器，直接诱因仍是选址失误。结论落定，写入调研报告。",tags:["分析","结论"],links:[{to:"e18",rel:"反驳"},{to:"e17",rel:"引用"}]},
+  {id:"e20",t:"t4",d:"2026-05-18",type:"记事",title:"年度体检异常",desc:"体检查出轻度脂肪肝、血压 142/92。报告 PDF 已导入并关联本事件。",tags:["健康"],links:[]},
+  {id:"e21",t:"t4",d:"2026-05-20",type:"待办",title:"制定 12 周干预计划",desc:"每周 3 次有氧 + 控糖饮食，第 6 周与第 12 周各复测一次血压血脂。",tags:["健康","计划"],links:[{to:"e20",rel:"因果"}]},
+  {id:"e22",t:"t4",d:"2026-09-14",type:"结论",title:"复查指标改善",desc:"12 周后复查：血压 128/84，脂肪肝由轻度转为可疑消失。干预方案有效，转入长期维持。",tags:["健康","结论"],links:[{to:"e21",rel:"引用"}]},
+];
+const CHATS = { e4:"[客户A-财务王] 发票走流程中，别急。\n[我] 已经逾期两周了，请给个明确时间。", e13:"[瓷砖李老板] 批次差异正常，都不予退换。\n[我] 合同写了对样板验收，色差照片发你了。" };
+
+const TYPE_STYLE = {
+  "记事":{text:"text-slate-300",bg:"bg-slate-700/80",node:"#94a3b8"},
+  "假设":{text:"text-amber-300",bg:"bg-amber-500/15 border border-amber-500/30",node:"#fbbf24"},
+  "待办":{text:"text-blue-300",bg:"bg-blue-500/15 border border-blue-500/30",node:"#60a5fa"},
+  "结论":{text:"text-emerald-300",bg:"bg-emerald-500/15 border border-emerald-500/30",node:"#34d399"},
+};
+const REL_COLOR = { "引用":"#64748b", "因果":"#f87171", "反驳":"#c084fc" };
+const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const topicName = id => TOPICS.find(t=>t.id===id).name;
+const topicIcon = id => TOPICS.find(t=>t.id===id).icon;
+const evById = id => EVENTS.find(e=>e.id===id);
+
+/* ================= 视图切换 ================= */
+document.querySelectorAll(".tab-btn").forEach(btn=>btn.addEventListener("click",()=>{
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  const view = document.getElementById("view-"+btn.dataset.view);
+  view.classList.add("active"); view.classList.add("fade-in");
+  if(btn.dataset.view==="graph") initGraphOnce();
+}));
+
+/* ================= ① 主题聚合 ================= */
+function renderTopics(){
+  const el = document.getElementById("topic-grid");
+  el.innerHTML = TOPICS.map(tp=>{
+    const evs = EVENTS.filter(e=>e.t===tp.id);
+    const cnt = t => evs.filter(e=>e.type===t).length;
+    const keyEvs = evs.filter(e=>e.type==="结论"||e.type==="假设").slice(0,3);
+    return `<div class="fade-in rounded-xl border border-slate-700/50 bg-slate-800/60 p-5 backdrop-blur-sm transition-colors hover:border-cyan-500/30">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-700/60 text-lg">${tp.icon}</div>
+          <div><div class="text-lg font-medium">${tp.name}</div>
+          <div class="mt-0.5 text-xs text-slate-500">${tp.span} · ${evs.length} 条事件</div></div>
+        </div>
+        <div class="flex gap-1.5 text-[11px]">
+          ${cnt("记事")?`<span class="rounded-full bg-slate-700/80 px-2 py-0.5 text-slate-300">${cnt("记事")}记事</span>`:""}
+          ${cnt("假设")?`<span class="rounded-full bg-amber-500/15 px-2 py-0.5 text-amber-300">${cnt("假设")}假设</span>`:""}
+          ${cnt("结论")?`<span class="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-300">${cnt("结论")}结论</span>`:""}
+        </div>
+      </div>
+      <p class="mt-3 text-sm leading-relaxed text-slate-400">${tp.desc}</p>
+      <div class="mt-4 space-y-2 border-l border-slate-700/60 pl-4">
+        ${keyEvs.map(e=>`<div class="relative text-xs">
+          <span class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full" style="background:${TYPE_STYLE[e.type].node}"></span>
+          <span class="text-slate-500">${e.d.slice(0,7)}</span>
+          <span class="ml-2 ${TYPE_STYLE[e.type].text}">[${e.type}]</span>
+          <span class="ml-1 text-slate-300">${e.title}</span></div>`).join("")}
+      </div>
+      <div class="mt-4 flex gap-2">
+        <button onclick="openWiki('${tp.id}')" class="rounded-lg bg-cyan-500 px-3.5 py-1.5 text-xs font-medium text-slate-900 transition-colors hover:bg-cyan-400">查看知识文档</button>
+        <button onclick="openGraph('${tp.id}')" class="rounded-lg border border-slate-700 px-3.5 py-1.5 text-xs text-slate-300 transition-colors hover:border-cyan-500/40 hover:text-cyan-300">主题图谱</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+function switchView(name){ document.querySelector(`.tab-btn[data-view="${name}"]`).click(); }
+function openWiki(tid){ switchView("wiki"); renderWiki(tid); }
+function openGraph(tid){ switchView("graph"); initGraphOnce(tid); }
+
+/* ================= ② 知识图谱 ================= */
+let graphInited=false, nodes=[], edges=[], filter="all", hoverN=null, selN=null, raf=0;
+function initGraphOnce(topic){ 
+  if(!graphInited){ setupGraph(); graphInited=true; }
+  if(topic) setFilter(topic); else setFilter("all");
+}
+function buildFilterBar(){
+  const el=document.getElementById("graph-filter");
+  const items=[["all","全部"],...TOPICS.map(t=>[t.id,t.name])];
+  el.innerHTML=items.map(([id,name])=>`<button data-f="${id}" class="gf rounded-full border px-3 py-1 text-xs transition-colors"></button>`).join("");
+  el.querySelectorAll(".gf").forEach(b=>b.addEventListener("click",()=>setFilter(b.dataset.f)));
+}
+function setFilter(f){
+  filter=f; paintFilterBar(); if(window.restartGraph)restartGraph();
+}
+function paintFilterBar(){
+  document.querySelectorAll(".gf").forEach(b=>{
+    const on=b.dataset.f===filter;
+    b.textContent=b.textContent.replace(/^\*|\*$/g,"");
+    b.className=`gf rounded-full border px-3 py-1 text-xs transition-colors ${on?"border-cyan-500/50 bg-cyan-500/10 text-cyan-300":"border-slate-700 text-slate-400 hover:text-slate-100"}`;
+    b.textContent=({all:"全部",...Object.fromEntries(TOPICS.map(t=>[t.id,t.name]))})[b.dataset.f];
+  });
+}
+function setupGraph(){
+  buildFilterBar();
+  const cv=document.getElementById("graph-canvas");
+  nodes = EVENTS.map((e,i)=>({id:e.id, x:0,y:0,vx:0,vy:0}));
+  edges = [];
+  EVENTS.forEach(e=>e.links.forEach(l=>edges.push({from:e.id,to:l.to,rel:l.rel})));
+  const byId = Object.fromEntries(nodes.map(n=>[n.id,n]));
+
+  function resize(){
+    const r=cv.getBoundingClientRect(), dpr=devicePixelRatio||1;
+    cv.width=r.width*dpr; cv.height=r.height*dpr;
+    cv.getContext("2d").setTransform(dpr,0,0,dpr,0,0);
+    return r;
+  }
+  let rect=resize(); addEventListener("resize",()=>{rect=resize();restartSim();});
+  nodes.forEach((n,i)=>{ const a=i/nodes.length*Math.PI*2; n.x=rect.width/2+Math.cos(a)*170; n.y=rect.height/2+Math.sin(a)*150; });
+
+  let alpha=1;
+  function restartSim(){ alpha=1; cancelAnimationFrame(raf); raf=requestAnimationFrame(tick); }
+  function tick(){
+    const cx=rect.width/2, cy=rect.height/2;
+    const active = n => filter==="all" || evById(n.id).t===filter;
+    for(let i=0;i<nodes.length;i++) for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i],b=nodes[j]; let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy||1;
+      if(d2>90000) continue; const f=900/d2*alpha; const d=Math.sqrt(d2);
+      a.vx-=dx/d*f; a.vy-=dy/d*f; b.vx+=dx/d*f; b.vy+=dy/d*f;
+    }
+    edges.forEach(e=>{ const a=byId[e.from],b=byId[e.to]; if(!a||!b)return;
+      const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||1, f=(d-95)*0.02*alpha;
+      a.vx+=dx/d*f; a.vy+=dy/d*f; b.vx-=dx/d*f; b.vy-=dy/d*f; });
+    nodes.forEach(n=>{ n.vx+=(cx-n.x)*0.003*alpha; n.vy+=(cy-n.y)*0.003*alpha;
+      if(n!==dragN){ n.x+=n.vx; n.y+=n.vy; } n.vx*=0.6; n.vy*=0.6; });
+    alpha*=0.985; draw(); if(alpha>0.02||dragN) raf=requestAnimationFrame(tick);
+  }
+  function draw(){
+    const ctx=cv.getContext("2d"); ctx.clearRect(0,0,rect.width,rect.height);
+    const inScope = e => filter==="all" || (evById(e.from).t===filter&&evById(e.to).t===filter);
+    edges.forEach(e=>{ const a=byId[e.from],b=byId[e.to]; const on=inScope(e);
+      ctx.strokeStyle=on?REL_COLOR[e.rel]||"#64748b":"rgba(100,116,139,.12)";
+      ctx.lineWidth=on?(selN&&(e.from===selN||e.to===selN)?2:1.3):0.7;
+      ctx.setLineDash(e.rel==="反驳"&&on?[5,4]:[]);
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); ctx.setLineDash([]);
+      if(on){ const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+        ctx.font="9px sans-serif"; ctx.fillStyle="rgba(148,163,184,.7)"; ctx.textAlign="center";
+        ctx.fillText(e.rel,mx,my-3); } });
+    nodes.forEach(n=>{ const ev=evById(n.id); const on=filter==="all"||ev.t===filter;
+      const sel=selN===n.id, hov=hoverN===n.id, r=sel?10:hov?9:7;
+      ctx.beginPath(); ctx.arc(n.x,n.y,r,0,7);
+      ctx.fillStyle=on?TYPE_STYLE[ev.type].node:"rgba(100,116,139,.18)"; ctx.fill();
+      if(sel){ ctx.strokeStyle="#22d3ee"; ctx.lineWidth=2; ctx.stroke(); }
+      ctx.font=(sel?"bold ":"")+"10.5px sans-serif"; ctx.textAlign="center";
+      ctx.fillStyle=on?(sel?"#e2e8f0":"rgba(203,213,225,.8)"):"rgba(148,163,184,.18)";
+      ctx.fillText(ev.title,n.x,n.y-r-5); });
+  }
+  function hit(mx,my){ for(let i=nodes.length-1;i>=0;i--){ const n=nodes[i];
+    if((mx-n.x)**2+(my-n.y)**2 < 130) return n; } return null; }
+  const pos = ev => { const r=cv.getBoundingClientRect(); return [ev.clientX-r.left,ev.clientY-r.top]; };
+  let dragN=null;
+  cv.addEventListener("mousedown",e=>{ const[mx,my]=pos(e); dragN=hit(mx,my); if(dragN)cv.classList.add("dragging"); });
+  addEventListener("mousemove",e=>{ const[mx,my]=pos(e);
+    if(dragN){ dragN.x=mx; dragN.y=my; dragN.vx=dragN.vy=0; if(alpha<0.05){alpha=0.3;restartSim();} }
+    else { const h=hit(mx,my); const id=h?h.id:null; if(id!==hoverN){hoverN=id;draw();} } });
+  addEventListener("mouseup",()=>{ dragN=null; cv.classList.remove("dragging"); });
+  cv.addEventListener("click",e=>{ const[mx,my]=pos(e); const n=hit(mx,my);
+    selN=n?n.id:null; draw(); renderNodeSide(selN); });
+  window.restartGraph=restartSim;
+  restartSim();
+}
+function renderNodeSide(id){
+  const el=document.getElementById("graph-side");
+  if(!id){ el.innerHTML='<p class="text-slate-500">点击左侧节点查看详情与关联。</p>'; return; }
+  const ev=evById(id);
+  const outs=ev.links.map(l=>`<div class="mt-1.5 text-xs"><span class="text-slate-500">→ ${l.rel}</span> <a href="javascript:void 0" class="text-cyan-400" onclick="jumpNode('${l.to}')">${evById(l.to).title}</a></div>`);
+  const ins=EVENTS.filter(e=>e.links.some(l=>l.to===id)).map(e=>`<div class="mt-1.5 text-xs"><span class="text-slate-500">← ${e.links.find(l=>l.to===id).rel}</span> <a href="javascript:void 0" class="text-cyan-400" onclick="jumpNode('${e.id}')">${e.title}</a></div>`);
+  el.innerHTML=`<div class="text-xs text-slate-500">${topicIcon(ev.t)} ${topicName(ev.t)} · ${ev.d}</div>
+    <div class="mt-1 text-base font-medium">${ev.title}</div>
+    <span class="mt-2 inline-block rounded-full px-2 py-0.5 text-[11px] ${TYPE_STYLE[ev.type].bg} ${TYPE_STYLE[ev.type].text}">${ev.type}</span>
+    <p class="mt-3 text-sm leading-relaxed text-slate-400">${esc(ev.desc)}</p>
+    ${outs.length||ins.length?`<div class="mt-4 border-t border-slate-700/50 pt-3 text-xs font-medium text-slate-400">关联${outs.join("")}${ins.join("")}</div>`:""}
+    <div class="mt-4 text-[11px] text-slate-600">${ev.tags.map(t=>`#${t}`).join(" ")}</div>`;
+}
+function jumpNode(id){ selN=id; if(window.restartGraph)restartGraph(); renderNodeSide(id);
+  const n=nodes.find(x=>x.id===id); if(n){ n.x=240;n.y=200;n.vx=n.vy=0; restartGraph(); } drawGraphSel(); }
+function drawGraphSel(){ /* 触发重绘 */ if(window.restartGraph)restartGraph(); }
+
+/* ================= ③ Wiki ================= */
+const WIKI_DOCS = {
+  t1:{ summary:"本主题记录 2026 年 3 月至 8 月对客户A应收账款的全程处理。核心脉络：合同正常履行 → 发票逾期未回款 → 实地走访与母公司质押公告支持「现金流紧张」假设 → 拒绝以货抵款 → 律师函施压 → 收回 80% 回款。",
+    conclusions:["【e9 · 07-10】拒绝广告投放抵扣方案，坚持现金回款并暂停交付——保住谈判筹码的关键决策。","【e11 · 08-25】律师函发出 24 天内收回 80% 回款，验证「施压+证据链」路径有效。"],
+    hypotheses:[["疑似现金流紧张（e5）","✅ 已印证：门店收缩（e6）与分期回款表现支持该假设。"],["将以货款抵广告费是展期话术（e7）","✅ 部分印证：对方确实提出抵扣方案，被拒后快速现金还款。"]],
+    lessons:["验收纪要+发票+催款函的完整证据链，可由时间线系统一键导出，是法务介入的前提。","对B端客户，账期承诺应与实地信号（门店、人事变动）交叉验证。"],
+    evidence:["通话录音（e4）","实地走访照片 12 张（e6）","催款函 EMS 回执（e8）","律师函 PDF（e10）"]},
+  t2:{ summary:"装修全过程按工序记录。瓷砖色差纠纷是该主题的关键事件：现场照片 + 合同对样板验收条款构成主张换货的依据，最终商家换货并补偿工期。",
+    conclusions:["【e15 · 06-15】第二批瓷砖全批更换，商家支付 10 天工期违约金。"],
+    hypotheses:[["超出样板合理范围的色差可主张换货（e14）","✅ 已印证：协商成功，无需走到投诉/诉讼。"]],
+    lessons:["每批材料到货当天与样板合照留档，成本极低但决定了纠纷时的举证能力。"],
+    evidence:["到货色差对比照片（e13）","购货合同条款截图（e14）","隐蔽管线标注图（e12）"]},
+  t3:{ summary:"对三家 O2O 竞品的走访调研，围绕「为什么都在亏损」展开。经历「重资产是主因」假设 → 补充财务数据 → 修正为「选址失误是直接诱因，重资产是放大器」的完整分析闭环。",
+    conclusions:["【e19 · 07-15】亏损 = 选址失误（直接诱因）× 重资产结构（放大器）。轻资产转型（丙）是唯一正现金流样本。"],
+    hypotheses:[["重资产扩张是亏损主因（e18）","⚠️ 部分成立后修正：固定成本占比高是共性，但样本中转正门店同样高固定成本，需叠加选址质量解释。"]],
+    lessons:["单案例结论要警惕；三样本不足时，先标「假设」再补数据，避免过早下「结论」。"],
+    evidence:["三家门店走访录音","行业闭店率数据截图"]},
+  t4:{ summary:"以年度体检异常为起点的事件闭环：异常发现 → 12 周干预计划 → 复查验证。时间线上的逐周打卡记录支撑了「干预有效」结论。",
+    conclusions:["【e22 · 09-14】血压 142/92 → 128/84，脂肪肝显著改善；有氧+控糖方案对该个案有效。"],
+    hypotheses:[],
+    lessons:["健康数据类事件适合「待办→打卡→复查」结构，系统可在计划节点自动提醒。"],
+    evidence:["体检报告 PDF×2","血压自测记录表"]},
+};
+function renderWiki(tid){
+  const tp=TOPICS.find(t=>t.id===tid), doc=WIKI_DOCS[tid];
+  const secs=[["sec-sum","主题综述"],["sec-con","关键结论"],["sec-hyp","假设验证"],["sec-evo","事件脉络"],["sec-evid","证据与素材"],["sec-les","经验沉淀"]];
+  document.getElementById("wiki-toc").innerHTML=secs.map(([id,name])=>`<a href="#${id}" class="block rounded-lg px-3 py-1.5 text-slate-400 hover:bg-slate-800 hover:text-cyan-300">${name}</a>`).join("")
+    +`<div class="mt-3 border-t border-slate-700/50 pt-3 text-xs text-slate-600">切换主题：</div>`
+    +TOPICS.map(t=>`<button onclick="renderWiki('${t.id}')" class="block w-full rounded-lg px-3 py-1.5 text-left text-sm ${t.id===tid?"text-cyan-300 bg-slate-800":"text-slate-500 hover:text-slate-200"}">${t.icon} ${t.name}</button>`).join("");
+  const evs=EVENTS.filter(e=>e.t===tid).sort((a,b)=>a.d<b.d?-1:1);
+  document.getElementById("wiki-body").innerHTML=`
+    <div class="rounded-xl border border-slate-700/50 bg-slate-800/60 p-5">
+      <div class="text-xs text-slate-500">${tp.icon} ${tp.span} · ${evs.length} 条来源事件 · <span class="text-emerald-300">AI 综述 + 人工校订</span></div>
+      <h3 class="mt-1 text-xl font-semibold">${tp.name}</h3>
+      <h4 id="sec-sum" class="mt-5 text-sm font-medium text-cyan-300">主题综述</h4>
+      <p class="mt-2 text-sm leading-relaxed text-slate-300">${doc.summary}</p>
+    </div>
+    <div class="rounded-xl border border-slate-700/50 bg-slate-800/60 p-5">
+      <h4 id="sec-con" class="text-sm font-medium text-cyan-300">关键结论</h4>
+      <div class="mt-2 space-y-2 text-sm leading-relaxed text-slate-300">${doc.conclusions.length?doc.conclusions.map(c=>`<div class="rounded-lg bg-emerald-500/10 px-3 py-2">${c}</div>`).join(""):'<span class="text-slate-500">暂无定论。</span>'}</div>
+    </div>
+    <div class="rounded-xl border border-slate-700/50 bg-slate-800/60 p-5">
+      <h4 id="sec-hyp" class="text-sm font-medium text-cyan-300">假设与验证状态</h4>
+      ${doc.hypotheses.length?`<div class="mt-2 space-y-2 text-sm">${doc.hypotheses.map(h=>`<div class="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2"><span class="text-amber-300">${h[0]}</span><div class="mt-1 text-slate-400">${h[1]}</div></div>`).join("")}</div>`:'<p class="mt-2 text-sm text-slate-500">该主题下没有悬置的假设。</p>'}
+    </div>
+    <div class="rounded-xl border border-slate-700/50 bg-slate-800/60 p-5">
+      <h4 id="sec-evo" class="text-sm font-medium text-cyan-300">事件脉络</h4>
+      <div class="mt-3 space-y-4 border-l border-slate-700/60 pl-5">
+        ${evs.map(e=>`<div class="relative">
+          <span class="absolute -left-[27px] top-1.5 h-3 w-3 rounded-full" style="background:${TYPE_STYLE[e.type].node};box-shadow:0 0 0 3px #0f172a"></span>
+          <div class="text-xs text-slate-500">${e.d} · <span class="${TYPE_STYLE[e.type].text}">${e.type}</span></div>
+          <div class="text-sm text-slate-200">${e.title}</div>
+          <div class="mt-0.5 text-xs leading-relaxed text-slate-400">${esc(e.desc)}</div></div>`).join("")}
+      </div>
+    </div>
+    <div class="grid gap-5 sm:grid-cols-2">
+      <div class="rounded-xl border border-slate-700/50 bg-slate-800/60 p-5">
+        <h4 id="sec-evid" class="text-sm font-medium text-cyan-300">证据与素材</h4>
+        <ul class="mt-2 space-y-1.5 text-sm text-slate-400">${doc.evidence.map(x=>`<li>📎 ${x}</li>`).join("")}</ul>
+      </div>
+      <div class="rounded-xl border border-slate-700/50 bg-slate-800/60 p-5">
+        <h4 id="sec-les" class="text-sm font-medium text-cyan-300">经验沉淀</h4>
+        <ul class="mt-2 space-y-1.5 text-sm text-slate-400">${doc.lessons.map(x=>`<li>💡 ${x}</li>`).join("")}</ul>
+      </div>
+    </div>`;
+  document.getElementById("wiki-body").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+/* ================= ④ 搜索 ================= */
+let sType="全部";
+function renderSearchFilters(){
+  const el=document.getElementById("search-filters");
+  const types=["全部","记事","假设","待办","结论"];
+  el.innerHTML=types.map(t=>`<button data-t="${t}" class="sf rounded-full border px-3 py-1 text-xs ${t===sType?"border-cyan-500/50 bg-cyan-500/10 text-cyan-300":"border-slate-700 text-slate-400 hover:text-slate-100"}">${t}</button>`).join("");
+  el.querySelectorAll(".sf").forEach(b=>b.addEventListener("click",()=>{sType=b.dataset.t;renderSearchFilters();doSearch();}));
+}
+function doSearch(){
+  const q=document.getElementById("q").value.trim();
+  let list=EVENTS.filter(e=>sType==="全部"||e.type===sType);
+  const hit = e => !q || (e.title+e.desc+e.tags.join("")+(CHATS[e.id]||"")+topicName(e.t)).includes(q);
+  list=list.filter(hit);
+  document.getElementById("search-count").textContent=q?`「${q}」命中 ${list.length} 条（bm25 排序示意）`:`共 ${list.length} 条事件`;
+  const hl = s => q?esc(s).replaceAll(esc(q),`<mark>${esc(q)}</mark>`):esc(s);
+  document.getElementById("search-results").innerHTML = list.length?list.map(e=>{
+    const chat=CHATS[e.id]&&q&&(CHATS[e.id]).includes(q);
+    return `<div class="fade-in cursor-pointer rounded-xl border border-slate-700/50 bg-slate-800/60 p-4 hover:border-cyan-500/30">
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <span class="text-slate-500">${topicIcon(e.t)} ${topicName(e.t)}</span>
+        <span class="rounded-full px-2 py-0.5 ${TYPE_STYLE[e.type].bg} ${TYPE_STYLE[e.type].text}">${e.type}</span>
+        <span class="text-slate-500">${e.d}</span>
+        ${e.tags.map(t=>`<span class="rounded-full bg-slate-700/80 px-2 py-0.5 text-slate-300">${t}</span>`).join("")}
+      </div>
+      <div class="mt-1.5 text-sm font-medium text-slate-100">${hl(e.title)}</div>
+      <div class="mt-1 text-sm leading-relaxed text-slate-400">${hl(e.desc)}</div>
+      ${chat?`<div class="mt-2 rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-xs whitespace-pre-line text-slate-400">💬 聊天记录命中：\n${hl(CHATS[e.id])}</div>`:""}
+    </div>`;}).join("")
+  :`<div class="rounded-xl border border-slate-700/50 bg-slate-800/40 p-8 text-center text-sm text-slate-500">没有匹配的事件。试试换个关键词，或放宽类型筛选。</div>`;
+}
+document.getElementById("q").addEventListener("input",doSearch);
+
+/* ================= 启动 ================= */
+renderTopics(); renderSearchFilters(); doSearch(); renderWiki("t1");
+</script>
+</body>
+</html>

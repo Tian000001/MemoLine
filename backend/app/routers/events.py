@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter
 
 from ..schemas import (
     CreateEventRequest,
     EventDetail,
+    EventLinkItem,
     EventListResponse,
     ParseChatRecordRequest,
     ParseChatRecordResponse,
     UpdateEventRequest,
 )
-from ..services import events_service
+from ..services import events_service, links_service
 
 router = APIRouter(prefix="/api/events", tags=["events"])
 
@@ -31,6 +32,7 @@ def list_events(
     keyword: Optional[str] = None,
     location: Optional[str] = None,
     tag: Optional[str] = None,
+    eventType: Optional[str] = None,
     startTime: Optional[str] = None,
     endTime: Optional[str] = None,
 ) -> EventListResponse:
@@ -42,12 +44,18 @@ def list_events(
         tag=tag,
         start_time=startTime,
         end_time=endTime,
+        event_type=eventType,
     )
 
 
 @router.get("/{event_id}", response_model=EventDetail)
 def get_event(event_id: str) -> EventDetail:
     return events_service.get_event(event_id)
+
+
+@router.get("/{event_id}/links", response_model=List[EventLinkItem])
+def get_event_links(event_id: str) -> List[EventLinkItem]:
+    return links_service.get_links_for_event(event_id)
 
 
 @router.post("", response_model=EventDetail, status_code=201)

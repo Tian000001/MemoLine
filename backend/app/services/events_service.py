@@ -23,6 +23,7 @@ from ..schemas import (
 )
 from ..utils.chat_parser import parse_chat_text
 from ..utils.timeutil import now_iso
+from .links_service import get_links_for_event
 
 
 def _load_tags(raw: Any) -> List[str]:
@@ -43,6 +44,7 @@ def _build_where(
     tag: Optional[str],
     start_time: Optional[str],
     end_time: Optional[str],
+    event_type: Optional[str] = None,
 ) -> tuple[str, List[Any]]:
     """构造 WHERE 子句与参数（列名带 e. 前缀，需配合 FROM events e）。"""
     clauses: List[str] = []
@@ -62,6 +64,10 @@ def _build_where(
             "exists (select 1 from json_each(e.tags) where json_each.value = ?)"
         )
         params.append(tag)
+
+    if event_type:
+        clauses.append("e.event_type = ?")
+        params.append(event_type)
 
     if start_time:
         clauses.append("e.event_time >= ?")
@@ -84,18 +90,23 @@ def list_events(
     tag: Optional[str] = None,
     start_time: Optional[str] = None,
     end_time: Optional[str] = None,
+    event_type: Optional[str] = None,
 ) -> EventListResponse:
     page = page if page and page > 0 else 1
     page_size = page_size if page_size and page_size > 0 else 20
     offset = (page - 1) * page_size
 
-    where, params = _build_where(keyword, location, tag, start_time, end_time)
+    where, params = _build_where(
+        keyword, location, tag, start_time, end_time, event_type
+    )
 
     sql = (
-        "SELECT e.id, e.event_time, e.location, e.description, e.tags, "
+        "SELECT e.id, e.event_time, e.location, e.description, e.tags, e.event_type, "
         "       e.created_at, e.updated_at, "
         "       (SELECT COUNT(*) FROM event_media m WHERE m.event_id = e.id) AS media_count, "
-        "       (SELECT COUNT(*) FROM event_chat_records c WHERE c.event_id = e.id) AS chat_count "
+        "       (SELECT COUNT(*) FROM event_chat_records c WHERE c.event_id = e.id) AS chat_count, "
+        "       (SELECT COUNT(*) FROM event_links l "
+        "        WHERE l.from_event = e.id OR l.to_event = e.id) AS link_count "
         "FROM events e" + where + " ORDER BY e.event_time DESC LIMIT ? OFFSET ?"
     )
     count_sql = "SELECT COUNT(*) AS total FROM events e" + where
@@ -111,8 +122,10 @@ def list_events(
             location=row["location"],
             description=row["description"],
             tags=_load_tags(row["tags"]),
+            eventType=row["event_type"] or "记事",
             mediaCount=row["media_count"],
             chatRecordCount=row["chat_count"],
+            linkCount=row["link_count"],
             createdAt=row["created_at"],
             updatedAt=row["updated_at"],
         )
@@ -164,18 +177,24 @@ def get_event(event_id: str) -> EventDetail:
         for c in chat_rows
     ]
 
+    links = get_links_for_event(event_id)
+
     return EventDetail(
         id=event_row["id"],
         eventTime=event_row["event_time"],
         location=event_row["location"],
         description=event_row["description"],
         tags=_load_tags(event_row["tags"]),
+        eventType=(event_row["event_type"] if "event_type" in event_row.keys() else None)
+        or "记事",
         mediaCount=len(media),
         chatRecordCount=len(chat_records),
+        linkCount=len(links),
         createdAt=event_row["created_at"],
         updatedAt=event_row["updated_at"],
         media=media,
         chatRecords=chat_records,
+        links=links,
     )
 
 
@@ -202,13 +221,14 @@ def create_event(dto: CreateEventRequest) -> EventDetail:
     with get_db() as conn:
         conn.execute(
             "INSERT INTO events (id, event_time, location, description, tags, "
-            "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "event_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 event_id,
                 dto.eventTime,
                 dto.location or None,
                 dto.description,
                 json.dumps(dto.tags or [], ensure_ascii=False),
+                dto.eventType or "记事",
                 now,
                 now,
             ),
@@ -271,6 +291,9 @@ def update_event(event_id: str, dto: UpdateEventRequest) -> EventDetail:
     if dto.tags is not None:
         sets.append("tags = ?")
         params.append(json.dumps(dto.tags, ensure_ascii=False))
+    if dto.eventType is not None:
+        sets.append("event_type = ?")
+        params.append(dto.eventType)
 
     if not sets:
         return get_event(event_id)

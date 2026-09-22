@@ -20,6 +20,7 @@ SCHEMA_SQL: list[str] = [
     "location" TEXT,
     "description" TEXT NOT NULL,
     "tags" TEXT NOT NULL DEFAULT '[]',
+    "event_type" TEXT NOT NULL DEFAULT '记事',
     "created_at" TEXT NOT NULL,
     "updated_at" TEXT NOT NULL
   )""",
@@ -61,6 +62,23 @@ SCHEMA_SQL: list[str] = [
     "created_at" TEXT NOT NULL,
     "updated_at" TEXT NOT NULL
   )""",
+    """CREATE TABLE IF NOT EXISTS "app_settings" (
+    "key" TEXT PRIMARY KEY NOT NULL,
+    "value" TEXT,
+    "updated_at" TEXT NOT NULL
+  )""",
+    """CREATE TABLE IF NOT EXISTS "event_links" (
+    "id" TEXT PRIMARY KEY NOT NULL,
+    "from_event" TEXT NOT NULL,
+    "to_event" TEXT NOT NULL,
+    "relation" TEXT NOT NULL,
+    "note" TEXT,
+    "created_at" TEXT NOT NULL,
+    FOREIGN KEY ("from_event") REFERENCES "events" ("id") ON DELETE CASCADE,
+    FOREIGN KEY ("to_event") REFERENCES "events" ("id") ON DELETE CASCADE
+  )""",
+    """CREATE INDEX IF NOT EXISTS "idx_event_links_from" ON "event_links" ("from_event")""",
+    """CREATE INDEX IF NOT EXISTS "idx_event_links_to" ON "event_links" ("to_event")""",
 ]
 
 
@@ -92,8 +110,18 @@ def get_db() -> Iterator[sqlite3.Connection]:
         conn.close()
 
 
+def _ensure_event_type_column(conn: sqlite3.Connection) -> None:
+    """旧库兼容：为已存在的 events 表补 event_type 列（幂等）。"""
+    cols = {row["name"] for row in conn.execute("PRAGMA table_info(events)").fetchall()}
+    if "event_type" not in cols:
+        conn.execute(
+            "ALTER TABLE events ADD COLUMN event_type TEXT NOT NULL DEFAULT '记事'"
+        )
+
+
 def init_db() -> None:
     """幂等建表。等效于原 NestJS 的 DatabaseInitService.onModuleInit。"""
     with get_db() as conn:
         for sql in SCHEMA_SQL:
             conn.execute(sql)
+        _ensure_event_type_column(conn)

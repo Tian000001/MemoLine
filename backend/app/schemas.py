@@ -29,11 +29,15 @@ class ChatRecordInput(BaseModel):
     sendTime: Optional[str] = None
 
 
+EventType = Literal["记事", "假设", "待办", "结论"]
+
+
 class CreateEventRequest(BaseModel):
     eventTime: str
     location: Optional[str] = None
     description: str
     tags: List[str] = Field(default_factory=list)
+    eventType: EventType = "记事"
     media: Optional[List[MediaInput]] = None
     chatRecords: Optional[List[ChatRecordInput]] = None
     chatRecordText: Optional[str] = None
@@ -44,10 +48,27 @@ class UpdateEventRequest(BaseModel):
     location: Optional[str] = None
     description: Optional[str] = None
     tags: Optional[List[str]] = None
+    eventType: Optional[EventType] = None
 
 
 class ParseChatRecordRequest(BaseModel):
     text: str
+
+
+class UpdateAiSettingsRequest(BaseModel):
+    """apiKey 为 None 表示不修改，空串表示清除（回退到 mock / .env）。"""
+
+    apiKey: Optional[str] = None
+    baseUrl: Optional[str] = None
+    model: Optional[str] = None
+
+
+class AiTestRequest(BaseModel):
+    """测试连接；字段缺省时使用已保存（或 .env）的配置。"""
+
+    apiKey: Optional[str] = None
+    baseUrl: Optional[str] = None
+    model: Optional[str] = None
 
 
 class CreateAnalysisRequest(BaseModel):
@@ -90,14 +111,49 @@ class ChatRecord(BaseModel):
     sendTime: Optional[str] = None
 
 
+# --------------------------------------------------------------------------- #
+# 事件关联（links）
+# --------------------------------------------------------------------------- #
+
+
+class CreateLinkRequest(BaseModel):
+    fromEvent: str
+    toEvent: str
+    relation: Literal["reference", "causal", "refute"]
+    note: Optional[str] = None
+
+
+class LinkRelatedEvent(BaseModel):
+    """关联对方的摘要（时间线/详情页直接渲染，无需再发请求）。"""
+
+    id: str
+    eventTime: str
+    eventType: str = "记事"
+    description: str
+    location: Optional[str] = None
+
+
+class EventLinkItem(BaseModel):
+    id: str
+    fromEvent: str
+    toEvent: str
+    relation: str
+    note: Optional[str] = None
+    createdAt: str
+    direction: str  # 'out'（本事件发起）/ 'in'（对方指向本事件）
+    relatedEvent: LinkRelatedEvent
+
+
 class EventItem(BaseModel):
     id: str
     eventTime: str
     location: Optional[str] = None
     description: str
     tags: List[str] = Field(default_factory=list)
+    eventType: str = "记事"
     mediaCount: int = 0
     chatRecordCount: int = 0
+    linkCount: int = 0
     createdAt: str
     updatedAt: str
 
@@ -105,6 +161,7 @@ class EventItem(BaseModel):
 class EventDetail(EventItem):
     media: List[EventMedia] = Field(default_factory=list)
     chatRecords: List[ChatRecord] = Field(default_factory=list)
+    links: List[EventLinkItem] = Field(default_factory=list)
 
 
 class EventListResponse(BaseModel):
@@ -164,6 +221,21 @@ class UploadedMediaMeta(BaseModel):
     filePath: str
     fileName: str
     fileSize: int
+
+
+class AiSettingsResponse(BaseModel):
+    source: str  # 'db'（页面保存过）/ 'env'（沿用 .env）/ 'mock'（未配置，走本地演示）
+    baseUrl: str
+    model: str
+    hasApiKey: bool
+    apiKeyMasked: str = ""
+
+
+class AiTestResponse(BaseModel):
+    ok: bool
+    message: str
+    model: str = ""
+    elapsedMs: int = 0
 
 
 # --------------------------------------------------------------------------- #

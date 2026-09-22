@@ -24,7 +24,7 @@ from starlette.staticfiles import StaticFiles
 from .config import DATABASE_PATH, FRONTEND_DIR, SERVER_HOST, SERVER_PORT, UPLOADS_DIR
 from .db import ensure_dirs, init_db
 from .errors import DomainError
-from .routers import analysis, events, media
+from .routers import analysis, events, links, media, settings
 
 # 与旧 RESPONSE_CODE 枚举保持一致
 _HTTP_STATUS_TO_CODE = {
@@ -63,7 +63,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="ttq-time",
     description="时间线事件记录与智能复盘系统 API",
-    version="1.0.0",
+    version="1.0.5",
     lifespan=lifespan,
 )
 
@@ -138,8 +138,10 @@ async def handle_unexpected_error(
 # --------------------------------------------------------------------------- #
 
 app.include_router(events.router)
+app.include_router(links.router)
 app.include_router(analysis.router)
 app.include_router(media.router)
+app.include_router(settings.router)
 
 # 上传的媒体文件：/api/media/<filename>
 app.mount(

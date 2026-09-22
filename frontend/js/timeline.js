@@ -11,6 +11,8 @@
   var PAGE_SIZE = 10;
   var FILTER_SEP = '|~|';
 
+  var REL_LABEL = { reference: '引用', causal: '因果', refute: '反驳' };
+
   var state = {
     page: 1,
     events: [],
@@ -21,6 +23,7 @@
     location: '',
     startDate: '',
     endDate: '',
+    eventType: '',
     filterOpen: false,
     expandedId: null,
     detailCache: {},
@@ -36,6 +39,7 @@
     el.location = document.getElementById('f-location');
     el.start = document.getElementById('f-start');
     el.end = document.getElementById('f-end');
+    el.type = document.getElementById('f-type');
     el.toggleFilter = document.getElementById('btn-toggle-filter');
     el.filterCount = document.getElementById('filter-count');
     el.filterChevron = document.getElementById('filter-chevron');
@@ -60,6 +64,7 @@
     if (state.keyword) params.keyword = state.keyword;
     if (state.tag) params.tag = state.tag;
     if (state.location) params.location = state.location;
+    if (state.eventType) params.eventType = state.eventType;
     if (state.startDate) {
       var start = new Date(state.startDate + 'T00:00:00');
       if (!isNaN(start.getTime())) params.startTime = start.toISOString();
@@ -98,7 +103,8 @@
       (state.tag ? 1 : 0) +
       (state.location ? 1 : 0) +
       (state.startDate ? 1 : 0) +
-      (state.endDate ? 1 : 0)
+      (state.endDate ? 1 : 0) +
+      (state.eventType ? 1 : 0)
     );
   }
 
@@ -109,6 +115,7 @@
       state.location,
       state.startDate,
       state.endDate,
+      state.eventType,
     ].join(FILTER_SEP);
   }
 
@@ -119,6 +126,7 @@
     state.location = el.location.value.trim();
     state.startDate = el.start.value;
     state.endDate = el.end.value;
+    state.eventType = el.type.value;
 
     var count = activeFilterCount();
     if (count > 0) {
@@ -149,6 +157,21 @@
   }
 
   /* ----------------------------------------------------------------- 渲染 */
+
+  var TYPE_STYLE = {
+    '记事': 'bg-slate-700/70 text-slate-300',
+    '假设': 'bg-amber-500/15 text-amber-300 border border-amber-500/30',
+    '待办': 'bg-blue-500/15 text-blue-300 border border-blue-500/30',
+    '结论': 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30',
+  };
+
+  function typeBadge(type) {
+    var t = type || '记事';
+    var cls = TYPE_STYLE[t] || TYPE_STYLE['记事'];
+    return (
+      '<span class="rounded-full px-2 py-0.5 text-xs ' + cls + '">' + esc(t) + '</span>'
+    );
+  }
 
   function tagsHtml(tags) {
     return (tags || [])
@@ -222,6 +245,43 @@
       .join('');
   }
 
+  function linksHtml(links) {
+    var rows = (links || [])
+      .map(function (lk) {
+        var other = lk.relatedEvent || {};
+        var rel = REL_LABEL[lk.relation] || lk.relation;
+        var dir = lk.direction === 'in' ? '← 指向本事件' : '→ 由本事件发起';
+        return (
+          '<a href="event.html?id=' +
+          encodeURIComponent(other.id || '') +
+          '" class="block rounded-lg border border-slate-700/50 bg-slate-900/40 px-3 py-2 transition-colors hover:border-cyan-500/40">' +
+          '<div class="flex items-center gap-2 text-xs">' +
+          '<span class="rounded-full bg-cyan-500/15 px-2 py-0.5 text-cyan-300">' +
+          esc(rel) +
+          '</span>' +
+          '<span class="text-slate-500">' +
+          esc(dir) +
+          '</span>' +
+          '</div>' +
+          '<p class="mt-1 truncate text-sm text-slate-200">' +
+          esc(other.description || '') +
+          '</p>' +
+          '<p class="mt-0.5 truncate text-[11px] text-slate-500">' +
+          esc(ui.formatDateTime(other.eventTime || '')) +
+          '</p>' +
+          '</a>'
+        );
+      })
+      .join('');
+    return (
+      '<div><h4 class="mb-2 text-xs font-medium text-slate-400">关联事件（' +
+      (links || []).length +
+      '）</h4><div class="space-y-2">' +
+      rows +
+      '</div></div>'
+    );
+  }
+
   function detailHtml(detail) {
     var parts = [
       '<div class="space-y-4">',
@@ -253,6 +313,10 @@
       );
     }
 
+    if (detail.links && detail.links.length > 0) {
+      parts.push(linksHtml(detail.links));
+    }
+
     parts.push('</div>');
     return parts.join('');
   }
@@ -260,7 +324,7 @@
   function cardHtml(ev) {
     var expanded = state.expandedId === ev.id;
     var dotClass = expanded
-      ? 'border-cyan-400 bg-cyan-400 shadow-[0_0_8px_rgba(201_164_76_0.6)]'
+      ? 'border-cyan-400 bg-cyan-400 shadow-[0_0_8px_rgba(0_245_160_0.6)]'
       : 'border-slate-600 bg-slate-800';
 
     var detailSlot = '';
@@ -309,6 +373,7 @@
           esc(ev.location) +
           '</span></div>'
         : '') +
+      typeBadge(ev.eventType) +
       '</div>' +
       '<p class="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-200">' +
       esc(ev.description) +
@@ -324,6 +389,11 @@
       '<span class="flex items-center gap-1"><i data-lucide="message-square" class="h-3 w-3"></i>' +
       ev.chatRecordCount +
       ' 对话</span>' +
+      (ev.linkCount
+        ? '<span class="flex items-center gap-1"><i data-lucide="git-branch" class="h-3 w-3"></i>' +
+          ev.linkCount +
+          ' 关联</span>'
+        : '') +
       '</div></div>' +
       detailSlot +
       '</div></div>'
@@ -425,7 +495,7 @@
     [el.keyword, el.tag, el.location].forEach(function (input) {
       input.addEventListener('input', debounced);
     });
-    [el.start, el.end].forEach(function (input) {
+    [el.start, el.end, el.type].forEach(function (input) {
       input.addEventListener('change', function () {
         applyFilters(true);
       });
@@ -442,6 +512,7 @@
       el.location.value = '';
       el.start.value = '';
       el.end.value = '';
+      el.type.value = '';
       applyFilters(true);
     });
 
